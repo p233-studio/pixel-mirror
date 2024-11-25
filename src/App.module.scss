@@ -1,0 +1,15 @@
+@function rhythm($n) {
+  @return 8px * $n;
+}
+
+.app {
+  position: fixed;
+  right: 0;
+  bottom: rhythm(3);
+  left: 0;
+  z-index: 2147483647;
+  width: max-content;
+  margin-right: auto;
+  margin-left: auto;
+  border: 1px solid;
+}

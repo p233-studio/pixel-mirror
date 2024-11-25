@@ -1,13 +1,14 @@
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
 import solidSvg from "vite-plugin-solid-svg";
+import cssInjectedByJsPlugin from "vite-plugin-css-injected-by-js";
 import cssnano from "cssnano";
 
 let modulesConfig = {
   generateScopedName: "[local]-[hash:base64:4]"
 };
 
-if (process.env.IS_PROD) {
+if (process.env.NODE_ENV === "production") {
   const fileSet = {};
   const hashSet = {};
   modulesConfig = {
@@ -20,7 +21,7 @@ if (process.env.IS_PROD) {
         hashSet[i] = true;
       });
     },
-    generateScopedName: "[hash:base64:2]"
+    generateScopedName: "_J-[hash:base64:2]"
   };
 }
 
@@ -28,7 +29,7 @@ export default defineConfig({
   server: {
     port: 3000
   },
-  plugins: [solid(), solidSvg({ svgo: {} })],
+  plugins: [solid(), solidSvg({ svgo: {} }), cssInjectedByJsPlugin()],
   css: {
     modules: modulesConfig,
     postcss: {
@@ -38,8 +39,7 @@ export default defineConfig({
     },
     preprocessorOptions: {
       scss: {
-        api: "modern-compiler",
-        additionalData: `@use "~/styles/_common" as *;`
+        api: "modern-compiler"
       }
     }
   },
