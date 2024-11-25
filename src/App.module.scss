@@ -1,15 +1,164 @@
+$white: #fff;
+$black: #000;
+$max-zIndex: 2147483647;
+
 @function rhythm($n) {
   @return 8px * $n;
 }
 
+%button {
+  margin: 0;
+  font: inherit;
+  appearance: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  outline: none;
+}
+
 .app {
   position: fixed;
-  right: 0;
-  bottom: rhythm(3);
-  left: 0;
-  z-index: 2147483647;
-  width: max-content;
+  right: rhythm(2);
+  bottom: rhythm(5);
+  left: rhythm(2);
+  z-index: $max-zIndex;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: calc(100vw - #{rhythm(4)});
   margin-right: auto;
   margin-left: auto;
-  border: 1px solid;
+  font-family: "Arial", sans-serif;
+  color: $black;
+  user-select: none;
+  background: $white;
+  border: 2px solid;
+  border-radius: rhythm(4);
+  outline: 4px solid rgba($white, 0.5);
+  transition: all 0.4s ease;
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+.menuBar {
+  display: flex;
+  align-items: center;
+  padding: 0 rhythm(1.5);
+  overflow-x: auto;
+}
+
+.menuButton {
+  @extend %button;
+  padding: rhythm(1);
+
+  > svg {
+    vertical-align: bottom;
+  }
+}
+
+.actionButton {
+  &:hover {
+    background: rgba($black, 0.04);
+  }
+
+  &:active > svg {
+    transform: scale(0.95);
+  }
+}
+
+.opacityButton {
+  position: relative;
+
+  &__value {
+    position: absolute;
+    top: 18px;
+    right: 0;
+    left: 0;
+    z-index: 1;
+    font-size: 8px;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+  }
+}
+
+.alignmentTrigger {
+  cursor: default;
+}
+
+.alignmentPopover {
+  position: absolute;
+  bottom: 100%;
+  left: 96px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding-top: rhythm(0.5);
+  padding-right: rhythm(0.5);
+  padding-left: rhythm(0.5);
+  overflow: hidden;
+  background: $white;
+  border-top: 2px solid $black;
+  border-right: 2px solid $black;
+  border-left: 2px solid $black;
+  border-radius: rhythm(1.5) rhythm(1.5) 0 0;
+}
+
+.alignmentButton {
+  @extend %button;
+  padding: rhythm(0.5);
+  border-radius: rhythm(1);
+
+  &:hover {
+    background: rgba($black, 0.04);
+  }
+
+  > svg {
+    width: 24px;
+    height: 24px;
+    vertical-align: bottom;
+  }
+}
+
+.grabButton {
+  padding-right: 0;
+  padding-left: 0;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: rhythm(2);
+
+  &__closeButton {
+    @extend %button;
+    position: absolute;
+    right: 0;
+    bottom: rhythm(-2.25);
+    left: 0;
+    z-index: 1;
+    width: max-content;
+    padding-right: rhythm(2.5);
+    padding-left: rhythm(2.5);
+    margin: auto;
+    line-height: rhythm(4);
+    color: $white;
+    background: $black;
+    border-radius: rhythm(1.5);
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
 }
