@@ -6,11 +6,12 @@ import IconImageShow from "~/assets/image-02-stroke-rounded.svg";
 // import IconImageHide from "~/assets/image-not-found-01-stroke-rounded.svg";
 import IconImageFolder from "~/assets/folder-upload-stroke-rounded.svg";
 
-import IconAlignment from "~/assets/distribute-vertical-center-stroke-rounded.svg";
-import IconAlignmentTop from "~/assets/arrow-up-05-stroke-rounded.svg";
-import IconAlignmentBottom from "~/assets/arrow-down-05-stroke-rounded.svg";
-import IconAlignmentLeft from "~/assets/arrow-left-05-stroke-rounded.svg";
-import IconAlignmentRight from "~/assets/arrow-right-05-stroke-rounded.svg";
+import IconAlignment from "~/assets/keyframe-align-center-stroke-rounded.svg";
+import IconAlignmentTop from "~/assets/align-top-stroke-rounded.svg";
+import IconAlignmentBottom from "~/assets/align-bottom-stroke-rounded.svg";
+import IconAlignmentLeft from "~/assets/align-left-stroke-rounded.svg";
+import IconAlignmentRight from "~/assets/align-right-stroke-rounded.svg";
+import IconAlignmentCenter from "~/assets/align-horizontal-center-stroke-rounded.svg";
 
 import IconGridShow from "~/assets/grid-stroke-rounded.svg";
 // import IconGridHide from "~/assets/grid-off-stroke-rounded.svg";
@@ -121,6 +122,9 @@ export default function App() {
             </button>
             <button class={clsx(css.alignmentButton, css.actionButton)}>
               <IconAlignmentTop />
+            </button>
+            <button class={clsx(css.alignmentButton, css.actionButton)}>
+              <IconAlignmentCenter />
             </button>
             <button class={clsx(css.alignmentButton, css.actionButton)}>
               <IconAlignmentBottom />
