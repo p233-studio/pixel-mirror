@@ -135,11 +135,22 @@ $max-zIndex: 2147483647;
 
 .panel {
   position: relative;
-  display: flex;
-  flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: rhythm(2);
+  border-radius: inherit;
+
+  &__contentWrapper {
+    height: 100%;
+    padding: rhythm(1);
+    overflow: hidden;
+    border-radius: inherit;
+  }
+
+  &__content {
+    height: 100%;
+    padding: rhythm(1);
+    overflow: auto;
+  }
 
   &__closeButton {
     @extend %button;
@@ -160,5 +171,19 @@ $max-zIndex: 2147483647;
     &:active {
       transform: scale(0.95);
     }
+  }
+}
+
+.designGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: rhythm(2);
+
+  > img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: rhythm(1);
   }
 }
