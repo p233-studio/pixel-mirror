@@ -1,6 +1,7 @@
 $white: #fff;
 $black: #000;
 $max-zIndex: 2147483647;
+$timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
 @function rhythm($n) {
   @return 8px * $n;
@@ -14,6 +15,10 @@ $max-zIndex: 2147483647;
   background: none;
   border: none;
   outline: none;
+}
+
+.hide {
+  display: none !important;
 }
 
 .app {
@@ -35,8 +40,14 @@ $max-zIndex: 2147483647;
   background: $white;
   border: 2px solid;
   border-radius: rhythm(4);
-  outline: 4px solid rgba($white, 0.5);
-  transition: all 0.4s ease;
+  outline: 3px solid rgba($white, 0.5);
+  transition: all 0.3s $timing-function;
+  transform: translateZ(0);
+  will-change: width, height;
+
+  &.noEvents {
+    pointer-events: none;
+  }
 
   * {
     box-sizing: border-box;
@@ -85,10 +96,6 @@ $max-zIndex: 2147483647;
   }
 }
 
-.alignmentTrigger {
-  cursor: default;
-}
-
 .alignmentPopover {
   position: absolute;
   bottom: 100%;
@@ -121,6 +128,52 @@ $max-zIndex: 2147483647;
     height: 24px;
     vertical-align: bottom;
   }
+}
+
+.scaleButton {
+  position: relative;
+
+  &__icon {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 16px;
+    height: 16px;
+    margin: auto;
+    stroke-width: 5px;
+  }
+
+  &__value {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    height: 16px;
+    margin: auto;
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+  }
+}
+
+.coordinates {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 1;
+  width: max-content;
+  padding: 0 rhythm(1);
+  margin: auto;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 20px;
+  color: $white;
+  white-space: nowrap;
+  pointer-events: none;
+  background: $white;
+  background: $black;
+  border-radius: rhythm(2);
 }
 
 .grabButton {
@@ -185,5 +238,46 @@ $max-zIndex: 2147483647;
     aspect-ratio: 3 / 4;
     object-fit: cover;
     border-radius: rhythm(1);
+  }
+}
+
+.fullPageContainer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: $max-zIndex - 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: all;
+  user-select: none;
+  transition: none;
+  will-change: width, height, transform;
+  contain: layout size;
+
+  &:active {
+    outline: 1px dashed $black;
+  }
+
+  &.animation {
+    transition:
+      width 0.3s $timing-function,
+      height 0.3s $timing-function,
+      transform 0.3s $timing-function;
+  }
+
+  &.locked {
+    pointer-events: none;
+    cursor: default;
+  }
+
+  &.solid {
+    outline: none !important;
   }
 }
