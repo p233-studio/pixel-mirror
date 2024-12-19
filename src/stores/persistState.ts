@@ -7,9 +7,14 @@ const defaultPersistState = {
   desginOpacity: 0.5,
   designPosition: { x: 0, y: 0 },
   designScale: 1,
-  isDesignLocked: false,
-  isDesignVisible: true,
-  isGridGuideVisible: false
+  lockDesignOverlay: false,
+  showDesignOverlay: true,
+  showVerticalRhythmOverlay: false,
+  verticalRhythmHeight: "8px",
+  verticalRhythmGridColor: "rgba(255, 0, 0, .05)",
+  showGridSystemOverlay: false,
+  activeGridSystemId: "default",
+  gridSystemColor: "rgba(255, 0, 0, .05)"
 } satisfies PersistState;
 
 function getLocalStorageItem<K extends keyof PersistState>(key: K): PersistState[K] {

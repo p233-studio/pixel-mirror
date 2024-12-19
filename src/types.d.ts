@@ -5,20 +5,35 @@ interface Design {
   createdAt: number;
 }
 
+interface GridSet {
+  id: string;
+  width: string;
+  columns: number;
+  gutterWidth: string;
+  isGutterOnOutside: boolean;
+  position: GridPosition;
+  createdAt: number;
+}
+
 interface PersistState {
   designId: string | undefined;
   desginOpacity: number;
   designPosition: { x: number; y: number };
   designScale: 0.5 | 1;
-  isDesignLocked: boolean;
-  isDesignVisible: boolean;
-  isGridGuideVisible: boolean;
+  lockDesignOverlay: boolean;
+  showDesignOverlay: boolean;
+  showVerticalRhythmOverlay: boolean;
+  verticalRhythmHeight: string;
+  verticalRhythmGridColor: string;
+  showGridSystemOverlay: boolean;
+  activeGridSystemId: string | undefined;
+  gridSystemColor: string;
 }
 
 interface MemoryState {
   showAlignmentPopover: boolean;
-  showDesignsPanel: boolean;
-  showSettingsPanel: boolean;
+  showDesignListPanel: boolean;
+  showGridSettingsPanel: boolean;
   designUrl: string | undefined;
   designSize: { width: number; height: number };
   designOriginalSize: { width: number; height: number };
@@ -27,6 +42,9 @@ interface MemoryState {
   isZoomMode: boolean;
   isDragging: boolean;
   enableAnimation: boolean;
+  errorMessage: string | undefined;
 }
 
 type AlignmentPosition = "top" | "right" | "bottom" | "left" | "center" | "top-center";
+
+type GridPosition = "left" | "center" | "right";

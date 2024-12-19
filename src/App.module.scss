@@ -21,6 +21,34 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   display: none !important;
 }
 
+.toast {
+  position: absolute;
+  top: 2rem;
+  right: 1rem;
+  left: 1rem;
+  z-index: $max-zIndex;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: max-content;
+  padding: 0.375rem 0.75rem;
+  margin: auto;
+  color: #fff;
+  background: red;
+  border: 2px solid $white;
+  border-radius: 2rem;
+
+  > svg {
+    color: currentcolor;
+  }
+
+  &__message {
+    font-family: "Arial", sans-serif;
+    font-size: 15px;
+    line-height: 16px;
+  }
+}
+
 .app {
   position: fixed;
   right: rhythm(2);
@@ -133,16 +161,6 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 .scaleButton {
   position: relative;
 
-  &__icon {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    width: 16px;
-    height: 16px;
-    margin: auto;
-    stroke-width: 5px;
-  }
-
   &__value {
     position: absolute;
     inset: 0;
@@ -241,7 +259,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.fullPageContainer {
+.overlayContainer {
   position: absolute;
   top: 0;
   right: 0;
@@ -251,10 +269,11 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
-.overlay {
+.designOverlay {
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 1;
   pointer-events: all;
   user-select: none;
   transition: none;
@@ -279,5 +298,47 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
   &.solid {
     outline: none !important;
+  }
+}
+
+.verticalRhythmOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.gridSystemOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+
+  &.center {
+    justify-content: center;
+  }
+
+  &.left {
+    justify-content: start;
+  }
+
+  &.right {
+    justify-content: end;
+  }
+}
+
+.table {
+  width: 100%;
+  font-size: 15px;
+  line-height: 16px;
+  text-align: left;
+  border-spacing: 0;
+  border-collapse: collapse;
+
+  > tbody {
+    text-transform: capitalize;
+
+    input {
+      width: 80px;
+    }
   }
 }
