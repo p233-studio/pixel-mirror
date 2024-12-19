@@ -14,7 +14,8 @@ const defaultPersistState = {
   verticalRhythmGridColor: "rgba(255, 0, 0, .05)",
   showGridSystemOverlay: false,
   activeGridSystemId: "default",
-  gridSystemColor: "rgba(255, 0, 0, .05)"
+  gridSystemColor: "rgba(255, 0, 0, .05)",
+  appPosition: "bottom"
 } satisfies PersistState;
 
 function getLocalStorageItem<K extends keyof PersistState>(key: K): PersistState[K] {

@@ -28,6 +28,7 @@ interface PersistState {
   showGridSystemOverlay: boolean;
   activeGridSystemId: string | undefined;
   gridSystemColor: string;
+  appPosition: "top" | "bottom";
 }
 
 interface MemoryState {

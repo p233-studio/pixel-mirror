@@ -19,7 +19,7 @@ import IconLock from "~/assets/square-lock-02-stroke-rounded.svg";
 import IconUnlock from "~/assets/square-unlock-02-stroke-rounded.svg";
 import IconOpacity from "~/assets/idea-01-stroke-rounded.svg";
 import IconGridSettings from "~/assets/grid-table-stroke-rounded.svg";
-import IconDrag from "~/assets/drag-drop-vertical-stroke-rounded.svg";
+import IconRelocate from "~/assets/flip-top-stroke-rounded.svg";
 import IconWarning from "~/assets/alert-02-stroke-rounded.svg";
 import IconDelete from "~/assets/delete-02-stroke-rounded.svg";
 import IconTick from "~/assets/checkmark-circle-02-stroke-rounded.svg";
@@ -82,7 +82,7 @@ export default function App() {
     if (memoryState.showGridSettingsPanel) {
       return { width: "600px", height: "360px" };
     }
-    return { width: "364px", height: "48px" };
+    return { width: "380px", height: "48px" };
   });
 
   const toggleDesignVisible = () => {
@@ -153,12 +153,13 @@ export default function App() {
     setMemoryState("showDesignListPanel", !memoryState.showDesignListPanel);
   };
 
+  const switchAppPosition = () => {
+    const newPosition = persistState.appPosition === "top" ? "bottom" : "top";
+    updatePersistState({ appPosition: newPosition });
+  };
+
   return (
     <Show when={isReady()}>
-      <Show when={!!memoryState.errorMessage}>
-        <Toast />
-      </Show>
-
       <div class={css.overlayContainer} style={{ height: `${pageHeight()}px` }}>
         <DesignOverlay />
         <Show when={persistState.showVerticalRhythmOverlay && !memoryState.isZoomMode}>
@@ -171,28 +172,33 @@ export default function App() {
 
       <div
         id="_jigsaw-app"
-        class={clsx(css.app, memoryState.isSolidMode && css.hide, memoryState.isDragging && css.noEvents)}
+        class={clsx(
+          css.app,
+          memoryState.isSolidMode && css.hide,
+          memoryState.isDragging && css.noEvents,
+          persistState.appPosition === "top" && css.top
+        )}
         style={dimensions()}
       >
+        <Show when={!!memoryState.errorMessage}>
+          <Toast />
+        </Show>
+
         <div
           class={clsx(css.menuBar, (memoryState.showDesignListPanel || memoryState.showGridSettingsPanel) && css.hide)}
         >
-          <button class={clsx(css.menuButton, css.actionButton)} onClick={toggleDesignVisible}>
+          <button class={css.menuButton} onClick={toggleDesignVisible}>
             <Show when={persistState.showDesignOverlay} fallback={<IconDesignHide />}>
               <IconDesignShow />
             </Show>
           </button>
-          <button
-            class={clsx(css.menuButton, css.actionButton)}
-            onClick={toggleDesignLock}
-            disabled={!persistState.showDesignOverlay}
-          >
+          <button class={css.menuButton} onClick={toggleDesignLock} disabled={!persistState.showDesignOverlay}>
             <Show when={persistState.lockDesignOverlay} fallback={<IconUnlock />}>
               <IconLock />
             </Show>
           </button>
           <button
-            class={clsx(css.menuButton, css.actionButton, css.opacityButton)}
+            class={clsx(css.menuButton, css.opacityButton)}
             onClick={resetDesignOpacity}
             disabled={!persistState.showDesignOverlay}
           >
@@ -200,7 +206,7 @@ export default function App() {
             <IconOpacity />
           </button>
           <button
-            class={clsx(css.menuButton, css.actionButton)}
+            class={css.menuButton}
             onClick={() => adjustDesignAlignment("top-center")}
             onMouseEnter={showAlignmentPop}
             onMouseLeave={hideAlignmentPop}
@@ -209,7 +215,7 @@ export default function App() {
             <IconAlignment />
           </button>
           <button
-            class={clsx(css.menuButton, css.actionButton, css.scaleButton)}
+            class={clsx(css.menuButton, css.scaleButton)}
             onClick={adjustDesignScale}
             disabled={!persistState.showDesignOverlay}
           >
@@ -218,14 +224,17 @@ export default function App() {
             </span>
             <IconScale />
           </button>
-          <button class={clsx(css.menuButton, css.actionButton)} onClick={toggleGridSettingsPanel}>
+          <button class={css.menuButton} onClick={toggleGridSettingsPanel}>
             <IconGridSettings />
           </button>
-          <button class={clsx(css.menuButton, css.actionButton)} onClick={toggleDesignsPanel}>
+          <button class={css.menuButton} onClick={toggleDesignsPanel}>
             <IconDesignFolder />
           </button>
-          <button class={clsx(css.menuButton, css.grabButton)}>
-            <IconDrag />
+          <button
+            class={clsx(css.menuButton, persistState.appPosition === "top" && css.rotate)}
+            onClick={switchAppPosition}
+          >
+            <IconRelocate />
           </button>
         </div>
 
@@ -247,19 +256,19 @@ export default function App() {
           class={clsx(css.alignmentPopover, !memoryState.showAlignmentPopover && css.hide)}
           onMouseLeave={hideAlignmentPop}
         >
-          <button class={clsx(css.alignmentButton, css.actionButton)} onClick={() => adjustDesignAlignment("left")}>
+          <button class={css.alignmentButton} onClick={() => adjustDesignAlignment("left")}>
             <IconAlignmentLeft />
           </button>
-          <button class={clsx(css.alignmentButton, css.actionButton)} onClick={() => adjustDesignAlignment("top")}>
+          <button class={css.alignmentButton} onClick={() => adjustDesignAlignment("top")}>
             <IconAlignmentTop />
           </button>
-          <button class={clsx(css.alignmentButton, css.actionButton)} onClick={() => adjustDesignAlignment("center")}>
+          <button class={css.alignmentButton} onClick={() => adjustDesignAlignment("center")}>
             <IconAlignmentCenter />
           </button>
-          <button class={clsx(css.alignmentButton, css.actionButton)} onClick={() => adjustDesignAlignment("bottom")}>
+          <button class={css.alignmentButton} onClick={() => adjustDesignAlignment("bottom")}>
             <IconAlignmentBottom />
           </button>
-          <button class={clsx(css.alignmentButton, css.actionButton)} onClick={() => adjustDesignAlignment("right")}>
+          <button class={css.alignmentButton} onClick={() => adjustDesignAlignment("right")}>
             <IconAlignmentRight />
           </button>
         </div>

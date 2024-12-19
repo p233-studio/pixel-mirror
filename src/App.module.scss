@@ -21,36 +21,20 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.hide {
-  display: none !important;
+%action-button {
+  &:not(:disabled) {
+    &:hover {
+      background: rgba($black, 0.04);
+    }
+
+    &:active > svg {
+      transform: scale(0.95);
+    }
+  }
 }
 
-.toast {
-  position: fixed;
-  top: 2rem;
-  right: 1rem;
-  left: 1rem;
-  z-index: $max-zIndex;
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  width: max-content;
-  padding: 0.375rem 0.75rem;
-  margin: auto;
-  color: #fff;
-  background: red;
-  border: 2px solid $white;
-  border-radius: 2rem;
-
-  > svg {
-    color: currentcolor;
-  }
-
-  &__message {
-    font-family: "Arial", sans-serif;
-    font-size: 15px;
-    line-height: 16px;
-  }
+.hide {
+  display: none !important;
 }
 
 .app {
@@ -81,12 +65,47 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
   }
 
-  * {
-    box-sizing: border-box;
+  &.top {
+    top: rhythm(6);
+    bottom: auto;
   }
 
   svg {
     color: currentcolor;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+.toast {
+  position: absolute;
+  right: 0;
+  bottom: rhythm(12);
+  left: 0;
+  z-index: 10;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: max-content;
+  padding: 0.375rem 0.75rem;
+  margin: auto;
+  color: #fff;
+  background: red;
+  border: 2px solid $white;
+  border-radius: rhythm(4);
+
+  &__message {
+    font-family: "Arial", sans-serif;
+    font-size: 15px;
+    line-height: 16px;
+  }
+
+  @at-root {
+    .top & {
+      bottom: rhythm(-8);
+    }
   }
 }
 
@@ -99,20 +118,15 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
 .menuButton {
   @extend %button;
+  @extend %action-button;
   padding: rhythm(1);
 
   > svg {
-    vertical-align: bottom;
-  }
-}
-
-.actionButton:not(:disabled) {
-  &:hover {
-    background: rgba($black, 0.04);
+    display: block;
   }
 
-  &:active > svg {
-    transform: scale(0.95);
+  &.rotate {
+    transform: rotate(180deg);
   }
 }
 
@@ -152,17 +166,14 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
 .alignmentButton {
   @extend %button;
+  @extend %action-button;
   padding: rhythm(0.5);
   border-radius: rhythm(1);
 
-  &:hover {
-    background: rgba($black, 0.04);
-  }
-
   > svg {
+    display: block;
     width: 24px;
     height: 24px;
-    vertical-align: bottom;
   }
 }
 
@@ -200,16 +211,6 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   background: $white;
   background: $black;
   border-radius: rhythm(2);
-}
-
-.grabButton {
-  padding-right: 0;
-  padding-left: 0;
-  cursor: grab;
-
-  &:active {
-    cursor: grabbing;
-  }
 }
 
 .panel {
