@@ -73,7 +73,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   border: 2px solid;
   border-radius: rhythm(4);
   outline: 3px solid rgba($white, 0.5);
-  transition: all 0.3s $timing-function;
+  transition: all 0.25s $timing-function;
   transform: translateZ(0);
   will-change: width, height;
 
@@ -253,10 +253,35 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.designGrid {
+.gridGuideSettings {
+  visibility: hidden;
+  opacity: 0;
+  will-change: opacity visibility;
+
+  &.show {
+    visibility: visible;
+    opacity: 1;
+    transition:
+      opacity 0.5s $timing-function 0.25s,
+      visibility 0s 0.25s;
+  }
+}
+
+.designList {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: rhythm(2);
+  visibility: hidden;
+  opacity: 0;
+  will-change: opacity visibility;
+
+  &.show {
+    visibility: visible;
+    opacity: 1;
+    transition:
+      opacity 0.5s $timing-function 0.25s,
+      visibility 0s 0.25s;
+  }
 
   > img {
     display: block;
@@ -294,9 +319,9 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
   &.animation {
     transition:
-      width 0.3s $timing-function,
-      height 0.3s $timing-function,
-      transform 0.3s $timing-function;
+      width 0.25s $timing-function,
+      height 0.25s $timing-function,
+      transform 0.25s $timing-function;
   }
 
   &.locked {

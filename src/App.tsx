@@ -268,8 +268,7 @@ export default function App() {
           <div class={css.panel}>
             <div class={css.panel__contentWrapper}>
               <div class={css.panel__content}>
-                <VerticalRhythmSettings />
-                <GridSystemSettings />
+                <GridGuideSettings />
               </div>
             </div>
             <button class={css.panel__closeButton} onClick={toggleGridSettingsPanel}>
@@ -282,7 +281,7 @@ export default function App() {
           <div class={css.panel}>
             <div class={css.panel__contentWrapper}>
               <div class={css.panel__content}>
-                <DesignListGrid />
+                <DesignList />
               </div>
             </div>
             <button class={css.panel__closeButton} onClick={toggleDesignsPanel}>
@@ -295,9 +294,22 @@ export default function App() {
   );
 }
 
-function VerticalRhythmSettings() {
-  const [height, setHeight] = createSignal(persistState.verticalRhythmHeight);
-  const [color, setColor] = createSignal(persistState.verticalRhythmGridColor);
+function GridGuideSettings() {
+  const [verticalRhythmHeight, setVerticalRhythmHeight] = createSignal(persistState.verticalRhythmHeight);
+  const [verticalRhythmGridColor, setVerticalRhythmGridColor] = createSignal(persistState.verticalRhythmGridColor);
+  const [gridSetArray, setGridSetArray] = createSignal<GridSet[]>([]);
+  const [gridSystemColor, setGridSystemColor] = createSignal(persistState.gridSystemColor);
+  const [gridContainerWidth, setGridContainerWidth] = createSignal("");
+  const [gridColumns, setGridColumns] = createSignal("");
+  const [gutterWidth, setGutterWidth] = createSignal("");
+  const [isGutterOnOutside, setIsGutterOnOutside] = createSignal(true);
+  const [gridContainerPosition, setGridContainerPosition] = createSignal<GridPosition>("center");
+
+  onMount(() => {
+    JigsawDB.getAllGridSets()
+      .then((gridSets) => setGridSetArray(gridSets))
+      .catch(toastErrorMessage);
+  });
 
   const toggleVerticalRhythmGuide = () => {
     updatePersistState({
@@ -307,38 +319,10 @@ function VerticalRhythmSettings() {
 
   const updateVerticalRhythmSettings = () => {
     updatePersistState({
-      verticalRhythmHeight: height(),
-      verticalRhythmGridColor: color()
+      verticalRhythmHeight: verticalRhythmHeight(),
+      verticalRhythmGridColor: verticalRhythmGridColor()
     });
   };
-
-  return (
-    <div>
-      <h3>Vertical Rhythm</h3>
-      <button onClick={toggleVerticalRhythmGuide}>
-        {persistState.showVerticalRhythmOverlay ? "Hide" : "Show"} vertical rhythm guide
-      </button>
-      <input spellcheck={false} type="text" value={height()} onInput={(e) => setHeight(e.target.value)} />
-      <input spellcheck={false} type="text" value={color()} onInput={(e) => setColor(e.target.value)} />
-      <button onClick={updateVerticalRhythmSettings}>Update</button>
-    </div>
-  );
-}
-
-function GridSystemSettings() {
-  const [gridSetArray, setGridSetArray] = createSignal<GridSet[]>([]);
-  const [color, setColor] = createSignal(persistState.gridSystemColor);
-  const [width, setWidth] = createSignal("");
-  const [columns, setColumns] = createSignal("");
-  const [gutterWidth, setGutterWidth] = createSignal("");
-  const [isGutterOnOutside, setIsGutterOnOutside] = createSignal(true);
-  const [position, setPosition] = createSignal<GridPosition>("center");
-
-  onMount(() => {
-    JigsawDB.getAllGridSets()
-      .then((gridSets) => setGridSetArray(gridSets))
-      .catch(toastErrorMessage);
-  });
 
   const toggleGridSystemGuide = () => {
     updatePersistState({
@@ -348,26 +332,26 @@ function GridSystemSettings() {
 
   const updateGridGuideColor = () => {
     updatePersistState({
-      gridSystemColor: color()
+      gridSystemColor: gridSystemColor()
     });
   };
 
   const handleAddGridSet = () => {
     const gridSetData = {
-      width: width(),
-      columns: +columns(),
+      width: gridContainerWidth(),
+      columns: +gridColumns(),
       gutterWidth: gutterWidth(),
       isGutterOnOutside: isGutterOnOutside(),
-      position: position()
+      position: gridContainerPosition()
     };
     JigsawDB.addGridSet(gridSetData)
       .then((gridSet) => {
         setGridSetArray((prev) => [gridSet, ...prev]);
-        setWidth("");
-        setColumns("");
+        setGridContainerWidth("");
+        setGridColumns("");
         setGutterWidth("");
         setIsGutterOnOutside(true);
-        setPosition("center");
+        setGridContainerPosition("center");
       })
       .catch(toastErrorMessage);
   };
@@ -385,101 +369,130 @@ function GridSystemSettings() {
   };
 
   return (
-    <div>
-      <h3>Grid System</h3>
-      <button onClick={toggleGridSystemGuide}>
-        {persistState.showGridSystemOverlay ? "Hide" : "Show"} grid system guide
-      </button>
-      <input spellcheck={false} type="text" value={color()} onInput={(e) => setColor(e.target.value)} />
-      <button onClick={updateGridGuideColor}>Update</button>
-      <table class={css.table}>
-        <thead>
-          <tr>
-            <th>Width</th>
-            <th>Columns</th>
-            <th>Gutter Width</th>
-            <th>Outer Gutter</th>
-            <th>Position</th>
-            <th />
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {
-            <For each={gridSetArray()}>
-              {(gridSet) => (
-                <tr>
-                  <td>{gridSet.width}</td>
-                  <td>{gridSet.columns}</td>
-                  <td>{gridSet.gutterWidth}</td>
-                  <td>{String(gridSet.isGutterOnOutside)}</td>
-                  <td>{gridSet.position}</td>
-                  <td>
-                    <button onClick={() => handleDeletGridSet(gridSet.id)}>
-                      <IconDelete />
-                    </button>
-                  </td>
-                  <td>
-                    <button onClick={() => activeGridSet(gridSet.id)}>
-                      <IconTick />
-                    </button>
-                  </td>
-                </tr>
-              )}
-            </For>
-          }
-          <tr>
-            <td>
-              <input
-                spellcheck={false}
-                type="text"
-                placeholder="1140px"
-                value={width()}
-                onInput={(e) => setWidth(e.target.value)}
-              />
-            </td>
-            <td>
-              <input
-                spellcheck={false}
-                type="text"
-                placeholder="12"
-                value={columns()}
-                onInput={(e) => setColumns(e.target.value)}
-              />
-            </td>
-            <td>
-              <input
-                spellcheck={false}
-                type="text"
-                placeholder="24px"
-                value={gutterWidth()}
-                onInput={(e) => setGutterWidth(e.target.value)}
-              />
-            </td>
-            <td>
-              <select
-                value={Number(isGutterOnOutside())}
-                onChange={(e) => setIsGutterOnOutside(Boolean(e.target.value))}
-              >
-                <option value="1">True</option>
-                <option value="0">False</option>
-              </select>
-            </td>
-            <td>
-              <select value={position()} onChange={(e) => setPosition(e.target.value as GridPosition)}>
-                <option value="center">Center</option>
-                <option value="left">Left</option>
-                <option value="right">Right</option>
-              </select>
-            </td>
-            <td colspan={2}>
-              <button onClick={handleAddGridSet} disabled={!width() || !columns() || !gutterWidth()}>
-                Add Grid
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class={clsx(css.gridGuideSettings, !!gridSetArray().length && css.show)}>
+      <div>
+        <h3>Vertical Rhythm</h3>
+        <button onClick={toggleVerticalRhythmGuide}>
+          {persistState.showVerticalRhythmOverlay ? "Hide" : "Show"} vertical rhythm guide
+        </button>
+        <input
+          spellcheck={false}
+          type="text"
+          value={verticalRhythmHeight()}
+          onInput={(e) => setVerticalRhythmHeight(e.target.value)}
+        />
+        <input
+          spellcheck={false}
+          type="text"
+          value={verticalRhythmGridColor()}
+          onInput={(e) => setVerticalRhythmGridColor(e.target.value)}
+        />
+        <button onClick={updateVerticalRhythmSettings}>Update</button>
+      </div>
+      <div>
+        <h3>Grid System</h3>
+        <button onClick={toggleGridSystemGuide}>
+          {persistState.showGridSystemOverlay ? "Hide" : "Show"} grid system guide
+        </button>
+        <input
+          spellcheck={false}
+          type="text"
+          value={gridSystemColor()}
+          onInput={(e) => setGridSystemColor(e.target.value)}
+        />
+        <button onClick={updateGridGuideColor}>Update</button>
+        <table class={css.table}>
+          <thead>
+            <tr>
+              <th>Width</th>
+              <th>Columns</th>
+              <th>Gutter Width</th>
+              <th>Outer Gutter</th>
+              <th>Position</th>
+              <th />
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {
+              <For each={gridSetArray()}>
+                {(gridSet) => (
+                  <tr>
+                    <td>{gridSet.width}</td>
+                    <td>{gridSet.columns}</td>
+                    <td>{gridSet.gutterWidth}</td>
+                    <td>{String(gridSet.isGutterOnOutside)}</td>
+                    <td>{gridSet.position}</td>
+                    <td>
+                      <button onClick={() => handleDeletGridSet(gridSet.id)}>
+                        <IconDelete />
+                      </button>
+                    </td>
+                    <td>
+                      <button onClick={() => activeGridSet(gridSet.id)}>
+                        <IconTick />
+                      </button>
+                    </td>
+                  </tr>
+                )}
+              </For>
+            }
+            <tr>
+              <td>
+                <input
+                  spellcheck={false}
+                  type="text"
+                  placeholder="1140px"
+                  value={gridContainerWidth()}
+                  onInput={(e) => setGridContainerWidth(e.target.value)}
+                />
+              </td>
+              <td>
+                <input
+                  spellcheck={false}
+                  type="text"
+                  placeholder="12"
+                  value={gridColumns()}
+                  onInput={(e) => setGridColumns(e.target.value)}
+                />
+              </td>
+              <td>
+                <input
+                  spellcheck={false}
+                  type="text"
+                  placeholder="24px"
+                  value={gutterWidth()}
+                  onInput={(e) => setGutterWidth(e.target.value)}
+                />
+              </td>
+              <td>
+                <select
+                  value={Number(isGutterOnOutside())}
+                  onChange={(e) => setIsGutterOnOutside(Boolean(e.target.value))}
+                >
+                  <option value="1">True</option>
+                  <option value="0">False</option>
+                </select>
+              </td>
+              <td>
+                <select
+                  value={gridContainerPosition()}
+                  onChange={(e) => setGridContainerPosition(e.target.value as GridPosition)}
+                >
+                  <option value="center">Center</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </td>
+              <td colspan={2}>
+                <button onClick={handleAddGridSet} disabled={!gridContainerWidth() || !gridColumns() || !gutterWidth()}>
+                  Add Grid
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -505,7 +518,7 @@ function Design(props: Design) {
   return <img src={imgUrl()} draggable={false} onClick={handleDesignSelect} alt="" />;
 }
 
-function DesignListGrid() {
+function DesignList() {
   const [designArray, setDesignArray] = createSignal<Design[]>([]);
 
   onMount(() => {
@@ -525,7 +538,7 @@ function DesignListGrid() {
   };
 
   return (
-    <div class={css.designGrid}>
+    <div class={clsx(css.designList, !!designArray().length && css.show)}>
       {<For each={designArray()}>{(design) => <Design {...design} />}</For>}
       <input spellcheck={false} type="file" accept="image/jpeg,image/png" multiple onChange={handleDesignUpload} />
     </div>
