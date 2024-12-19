@@ -161,10 +161,10 @@ export default function App() {
 
       <div class={css.overlayContainer} style={{ height: `${pageHeight()}px` }}>
         <DesignOverlay />
-        <Show when={persistState.showVerticalRhythmOverlay}>
+        <Show when={persistState.showVerticalRhythmOverlay && !memoryState.isZoomMode}>
           <VerticalRhythmOverlay />
         </Show>
-        <Show when={persistState.showGridSystemOverlay}>
+        <Show when={persistState.showGridSystemOverlay && !memoryState.isZoomMode}>
           <GridSystemOverlay />
         </Show>
       </div>
