@@ -98,6 +98,7 @@ export default function App() {
   };
 
   const showAlignmentPop = () => {
+    if (!persistState.showDesignOverlay) return;
     setMemoryState("showAlignmentPopover", true);
   };
 
@@ -181,12 +182,20 @@ export default function App() {
               <IconDesignShow />
             </Show>
           </button>
-          <button class={clsx(css.menuButton, css.actionButton)} onClick={toggleDesignLock}>
+          <button
+            class={clsx(css.menuButton, css.actionButton)}
+            onClick={toggleDesignLock}
+            disabled={!persistState.showDesignOverlay}
+          >
             <Show when={persistState.lockDesignOverlay} fallback={<IconUnlock />}>
               <IconLock />
             </Show>
           </button>
-          <button class={clsx(css.menuButton, css.actionButton, css.opacityButton)} onClick={resetDesignOpacity}>
+          <button
+            class={clsx(css.menuButton, css.actionButton, css.opacityButton)}
+            onClick={resetDesignOpacity}
+            disabled={!persistState.showDesignOverlay}
+          >
             <span class={css.opacityButton__value}>{Math.floor(persistState.desginOpacity * 100)}</span>
             <IconOpacity />
           </button>
@@ -195,10 +204,15 @@ export default function App() {
             onClick={() => adjustDesignAlignment("top-center")}
             onMouseEnter={showAlignmentPop}
             onMouseLeave={hideAlignmentPop}
+            disabled={!persistState.showDesignOverlay}
           >
             <IconAlignment />
           </button>
-          <button class={clsx(css.menuButton, css.actionButton, css.scaleButton)} onClick={adjustDesignScale}>
+          <button
+            class={clsx(css.menuButton, css.actionButton, css.scaleButton)}
+            onClick={adjustDesignScale}
+            disabled={!persistState.showDesignOverlay}
+          >
             <span class={css.scaleButton__value}>
               {persistState.designScale === 0.5 ? ".5" : persistState.designScale.toString()}x
             </span>
@@ -484,7 +498,7 @@ function Design(props: Design) {
   });
 
   const handleDesignSelect = () => {
-    updatePersistState({ designId: props.id });
+    updatePersistState({ designId: props.id, showDesignOverlay: true });
     setMemoryState("showDesignListPanel", false);
   };
 
