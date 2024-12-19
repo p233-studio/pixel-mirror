@@ -21,7 +21,7 @@ if (process.env.NODE_ENV === "production") {
         hashSet[i] = true;
       });
     },
-    generateScopedName: "_J-[hash:base64:2]"
+    generateScopedName: "_J-[hash:base64:3]"
   };
 }
 
@@ -33,9 +33,7 @@ export default defineConfig({
   css: {
     modules: modulesConfig,
     postcss: {
-      plugins: [
-        cssnano({ preset: ["cssnano-preset-advanced", { discardUnused: { fontFace: false } }] })
-      ]
+      plugins: [cssnano({ preset: ["cssnano-preset-advanced", { discardUnused: { fontFace: false } }] })]
     },
     preprocessorOptions: {
       scss: {
