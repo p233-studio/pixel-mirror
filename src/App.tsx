@@ -23,6 +23,7 @@ import IconRelocate from "~/assets/flip-top-stroke-rounded.svg";
 import IconWarning from "~/assets/alert-02-stroke-rounded.svg";
 import IconDelete from "~/assets/delete-02-stroke-rounded.svg";
 import IconTick from "~/assets/checkmark-circle-02-stroke-rounded.svg";
+import IconUpload from "~/assets/image-upload-stroke-rounded.svg";
 
 function toastErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "An error occurred.";
@@ -59,7 +60,7 @@ export default function App() {
     const target = e.target as Element;
     if (!target.closest("#_jigsaw-app")) {
       setMemoryState({
-        showDesignListPanel: false,
+        showAllDesginsPanel: false,
         showGridSettingsPanel: false
       });
       window.removeEventListener("mousedown", handleClickOutside);
@@ -67,7 +68,7 @@ export default function App() {
   };
 
   createEffect(() => {
-    if (!memoryState.showDesignListPanel && !memoryState.showGridSettingsPanel) return;
+    if (!memoryState.showAllDesginsPanel && !memoryState.showGridSettingsPanel) return;
     window.addEventListener("mousedown", handleClickOutside);
     onCleanup(() => {
       window.removeEventListener("mousedown", handleClickOutside);
@@ -76,7 +77,7 @@ export default function App() {
 
   const dimensions = createMemo(() => {
     // Control menubar morphing through manual size adjustments
-    if (memoryState.showDesignListPanel) {
+    if (memoryState.showAllDesginsPanel) {
       return { width: "800px", height: "640px" };
     }
     if (memoryState.showGridSettingsPanel) {
@@ -145,14 +146,6 @@ export default function App() {
     });
   };
 
-  const toggleGridSettingsPanel = () => {
-    setMemoryState("showGridSettingsPanel", !memoryState.showGridSettingsPanel);
-  };
-
-  const toggleDesignsPanel = () => {
-    setMemoryState("showDesignListPanel", !memoryState.showDesignListPanel);
-  };
-
   const switchAppPosition = () => {
     const newPosition = persistState.appPosition === "top" ? "bottom" : "top";
     updatePersistState({ appPosition: newPosition });
@@ -185,7 +178,7 @@ export default function App() {
         </Show>
 
         <div
-          class={clsx(css.menuBar, (memoryState.showDesignListPanel || memoryState.showGridSettingsPanel) && css.hide)}
+          class={clsx(css.menuBar, (memoryState.showAllDesginsPanel || memoryState.showGridSettingsPanel) && css.hide)}
         >
           <button class={css.menuButton} onClick={toggleDesignVisible}>
             <Show when={persistState.showDesignOverlay} fallback={<IconDesignHide />}>
@@ -224,10 +217,10 @@ export default function App() {
             </span>
             <IconScale />
           </button>
-          <button class={css.menuButton} onClick={toggleGridSettingsPanel}>
+          <button class={css.menuButton} onClick={() => setMemoryState("showGridSettingsPanel", true)}>
             <IconGridSettings />
           </button>
-          <button class={css.menuButton} onClick={toggleDesignsPanel}>
+          <button class={css.menuButton} onClick={() => setMemoryState("showAllDesginsPanel", true)}>
             <IconDesignFolder />
           </button>
           <button
@@ -243,7 +236,7 @@ export default function App() {
             css.coordinates,
             (!persistState.showDesignOverlay ||
               memoryState.showAlignmentPopover ||
-              memoryState.showDesignListPanel ||
+              memoryState.showAllDesginsPanel ||
               memoryState.showGridSettingsPanel) &&
               css.hide
           )}
@@ -274,36 +267,18 @@ export default function App() {
         </div>
 
         <Show when={memoryState.showGridSettingsPanel}>
-          <div class={css.panel}>
-            <div class={css.panel__contentWrapper}>
-              <div class={css.panel__content}>
-                <GridGuideSettings />
-              </div>
-            </div>
-            <button class={css.panel__closeButton} onClick={toggleGridSettingsPanel}>
-              Close
-            </button>
-          </div>
+          <GridSettingsPanel />
         </Show>
 
-        <Show when={memoryState.showDesignListPanel}>
-          <div class={css.panel}>
-            <div class={css.panel__contentWrapper}>
-              <div class={css.panel__content}>
-                <DesignList />
-              </div>
-            </div>
-            <button class={css.panel__closeButton} onClick={toggleDesignsPanel}>
-              Close
-            </button>
-          </div>
+        <Show when={memoryState.showAllDesginsPanel}>
+          <AllDesignsPanel />
         </Show>
       </div>
     </Show>
   );
 }
 
-function GridGuideSettings() {
+function GridSettingsPanel() {
   const [verticalRhythmHeight, setVerticalRhythmHeight] = createSignal(persistState.verticalRhythmHeight);
   const [verticalRhythmGridColor, setVerticalRhythmGridColor] = createSignal(persistState.verticalRhythmGridColor);
   const [gridSetArray, setGridSetArray] = createSignal<GridSet[]>([]);
@@ -378,135 +353,149 @@ function GridGuideSettings() {
   };
 
   return (
-    <div class={clsx(css.gridGuideSettings, !!gridSetArray().length && css.show)}>
-      <div>
-        <h3>Vertical Rhythm</h3>
-        <button onClick={toggleVerticalRhythmGuide}>
-          {persistState.showVerticalRhythmOverlay ? "Hide" : "Show"} vertical rhythm guide
-        </button>
-        <input
-          spellcheck={false}
-          type="text"
-          value={verticalRhythmHeight()}
-          onInput={(e) => setVerticalRhythmHeight(e.target.value)}
-        />
-        <input
-          spellcheck={false}
-          type="text"
-          value={verticalRhythmGridColor()}
-          onInput={(e) => setVerticalRhythmGridColor(e.target.value)}
-        />
-        <button onClick={updateVerticalRhythmSettings}>Update</button>
+    <div class={css.panel}>
+      <div class={css.panel__contentWrapper}>
+        <div class={clsx(css.panel__content, !!gridSetArray().length && css.show)}>
+          <div>
+            <h3>Vertical Rhythm</h3>
+            <button onClick={toggleVerticalRhythmGuide}>
+              {persistState.showVerticalRhythmOverlay ? "Hide" : "Show"} vertical rhythm guide
+            </button>
+            <input
+              spellcheck={false}
+              type="text"
+              value={verticalRhythmHeight()}
+              onInput={(e) => setVerticalRhythmHeight(e.target.value)}
+            />
+            <input
+              spellcheck={false}
+              type="text"
+              value={verticalRhythmGridColor()}
+              onInput={(e) => setVerticalRhythmGridColor(e.target.value)}
+            />
+            <button onClick={updateVerticalRhythmSettings}>Update</button>
+          </div>
+          <div>
+            <h3>Grid System</h3>
+            <button onClick={toggleGridSystemGuide}>
+              {persistState.showGridSystemOverlay ? "Hide" : "Show"} grid system guide
+            </button>
+            <input
+              spellcheck={false}
+              type="text"
+              value={gridSystemColor()}
+              onInput={(e) => setGridSystemColor(e.target.value)}
+            />
+            <button onClick={updateGridGuideColor}>Update</button>
+            <table class={css.table}>
+              <thead>
+                <tr>
+                  <th>Width</th>
+                  <th>Columns</th>
+                  <th>Gutter Width</th>
+                  <th>Outer Gutter</th>
+                  <th>Position</th>
+                  <th />
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  <For each={gridSetArray()}>
+                    {(gridSet) => (
+                      <tr>
+                        <td>{gridSet.width}</td>
+                        <td>{gridSet.columns}</td>
+                        <td>{gridSet.gutterWidth}</td>
+                        <td>{String(gridSet.isGutterOnOutside)}</td>
+                        <td>{gridSet.position}</td>
+                        <td>
+                          <button onClick={() => handleDeletGridSet(gridSet.id)}>
+                            <IconDelete />
+                          </button>
+                        </td>
+                        <td>
+                          <button onClick={() => activeGridSet(gridSet.id)}>
+                            <IconTick />
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                  </For>
+                }
+                <tr>
+                  <td>
+                    <input
+                      spellcheck={false}
+                      type="text"
+                      placeholder="1140px"
+                      value={gridContainerWidth()}
+                      onInput={(e) => setGridContainerWidth(e.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      spellcheck={false}
+                      type="text"
+                      placeholder="12"
+                      value={gridColumns()}
+                      onInput={(e) => setGridColumns(e.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      spellcheck={false}
+                      type="text"
+                      placeholder="24px"
+                      value={gutterWidth()}
+                      onInput={(e) => setGutterWidth(e.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <select
+                      value={Number(isGutterOnOutside())}
+                      onChange={(e) => setIsGutterOnOutside(Boolean(e.target.value))}
+                    >
+                      <option value="1">True</option>
+                      <option value="0">False</option>
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      value={gridContainerPosition()}
+                      onChange={(e) => setGridContainerPosition(e.target.value as GridPosition)}
+                    >
+                      <option value="center">Center</option>
+                      <option value="left">Left</option>
+                      <option value="right">Right</option>
+                    </select>
+                  </td>
+                  <td colspan={2}>
+                    <button
+                      onClick={handleAddGridSet}
+                      disabled={!gridContainerWidth() || !gridColumns() || !gutterWidth()}
+                    >
+                      Add Grid
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-      <div>
-        <h3>Grid System</h3>
-        <button onClick={toggleGridSystemGuide}>
-          {persistState.showGridSystemOverlay ? "Hide" : "Show"} grid system guide
+      <div class={css.panel__footer}>
+        <button class={css.panel__button} onClick={() => setMemoryState("showGridSettingsPanel", false)}>
+          Close
         </button>
-        <input
-          spellcheck={false}
-          type="text"
-          value={gridSystemColor()}
-          onInput={(e) => setGridSystemColor(e.target.value)}
-        />
-        <button onClick={updateGridGuideColor}>Update</button>
-        <table class={css.table}>
-          <thead>
-            <tr>
-              <th>Width</th>
-              <th>Columns</th>
-              <th>Gutter Width</th>
-              <th>Outer Gutter</th>
-              <th>Position</th>
-              <th />
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {
-              <For each={gridSetArray()}>
-                {(gridSet) => (
-                  <tr>
-                    <td>{gridSet.width}</td>
-                    <td>{gridSet.columns}</td>
-                    <td>{gridSet.gutterWidth}</td>
-                    <td>{String(gridSet.isGutterOnOutside)}</td>
-                    <td>{gridSet.position}</td>
-                    <td>
-                      <button onClick={() => handleDeletGridSet(gridSet.id)}>
-                        <IconDelete />
-                      </button>
-                    </td>
-                    <td>
-                      <button onClick={() => activeGridSet(gridSet.id)}>
-                        <IconTick />
-                      </button>
-                    </td>
-                  </tr>
-                )}
-              </For>
-            }
-            <tr>
-              <td>
-                <input
-                  spellcheck={false}
-                  type="text"
-                  placeholder="1140px"
-                  value={gridContainerWidth()}
-                  onInput={(e) => setGridContainerWidth(e.target.value)}
-                />
-              </td>
-              <td>
-                <input
-                  spellcheck={false}
-                  type="text"
-                  placeholder="12"
-                  value={gridColumns()}
-                  onInput={(e) => setGridColumns(e.target.value)}
-                />
-              </td>
-              <td>
-                <input
-                  spellcheck={false}
-                  type="text"
-                  placeholder="24px"
-                  value={gutterWidth()}
-                  onInput={(e) => setGutterWidth(e.target.value)}
-                />
-              </td>
-              <td>
-                <select
-                  value={Number(isGutterOnOutside())}
-                  onChange={(e) => setIsGutterOnOutside(Boolean(e.target.value))}
-                >
-                  <option value="1">True</option>
-                  <option value="0">False</option>
-                </select>
-              </td>
-              <td>
-                <select
-                  value={gridContainerPosition()}
-                  onChange={(e) => setGridContainerPosition(e.target.value as GridPosition)}
-                >
-                  <option value="center">Center</option>
-                  <option value="left">Left</option>
-                  <option value="right">Right</option>
-                </select>
-              </td>
-              <td colspan={2}>
-                <button onClick={handleAddGridSet} disabled={!gridContainerWidth() || !gridColumns() || !gutterWidth()}>
-                  Add Grid
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   );
 }
 
-function Design(props: Design) {
+function DesignCard(
+  props: Design & { handleDesignSelect: (id: string) => void; handleDesignDelete: (id: string) => void }
+) {
   const [imgUrl, setImgUrl] = createSignal("");
 
   onMount(() => {
@@ -519,20 +508,36 @@ function Design(props: Design) {
     URL.revokeObjectURL(imgUrl());
   });
 
-  const handleDesignSelect = () => {
-    updatePersistState({ designId: props.id, showDesignOverlay: true });
-    setMemoryState("showDesignListPanel", false);
-  };
-
-  return <img src={imgUrl()} draggable={false} onClick={handleDesignSelect} alt="" />;
+  return (
+    <div class={clsx(css.designCard, persistState.designId === props.id && css.current)}>
+      <img
+        class={css.designCard__img}
+        src={imgUrl()}
+        draggable={false}
+        onClick={() => props.handleDesignSelect(props.id)}
+        alt=""
+      />
+      <button
+        class={css.designCard__button}
+        onClick={() => props.handleDesignDelete(props.id)}
+        disabled={persistState.designId === props.id}
+      >
+        <IconDelete />
+      </button>
+    </div>
+  );
 }
 
-function DesignList() {
+function AllDesignsPanel() {
+  const [isReady, setIsReady] = createSignal(false);
   const [designArray, setDesignArray] = createSignal<Design[]>([]);
 
   onMount(() => {
     JigsawDB.getAllDesigns()
-      .then((designs) => setDesignArray(designs))
+      .then((designs) => {
+        setDesignArray(designs);
+        setIsReady(true);
+      })
       .catch(toastErrorMessage);
   });
 
@@ -546,10 +551,66 @@ function DesignList() {
       .catch(toastErrorMessage);
   };
 
+  const handleDesignSelect = (id: string) => {
+    if (persistState.designId === id) return;
+    updatePersistState({ designId: id, showDesignOverlay: true });
+    setMemoryState("showAllDesginsPanel", false);
+  };
+
+  const handleDesignDelete = (id: string) => {
+    JigsawDB.deleteDesign(id)
+      .then(() => setDesignArray((prev) => prev.filter((design) => design.id !== id)))
+      .catch(toastErrorMessage);
+  };
+
+  const handleDesignDeleteAll = () => {
+    JigsawDB.deleteAllDesigns()
+      .then(() => {
+        setDesignArray([]);
+        updatePersistState({
+          designId: "",
+          showDesignOverlay: false
+        });
+        if (memoryState.designUrl) {
+          URL.revokeObjectURL(memoryState.designUrl);
+        }
+      })
+      .catch(toastErrorMessage);
+  };
+
   return (
-    <div class={clsx(css.designList, !!designArray().length && css.show)}>
-      {<For each={designArray()}>{(design) => <Design {...design} />}</For>}
-      <input spellcheck={false} type="file" accept="image/jpeg,image/png" multiple onChange={handleDesignUpload} />
+    <div class={css.panel}>
+      <div class={css.panel__contentWrapper}>
+        <div class={clsx(css.panel__content, isReady() && css.show)}>
+          <div class={css.allDesignsList}>
+            <label class={css.uploadButton}>
+              <IconUpload class={css.uploadButton__icon} />
+              <input type="file" accept="image/jpeg,image/png" multiple onChange={handleDesignUpload} />
+            </label>
+            {
+              <For each={designArray()}>
+                {(design) => (
+                  <DesignCard
+                    {...design}
+                    handleDesignSelect={handleDesignSelect}
+                    handleDesignDelete={handleDesignDelete}
+                  />
+                )}
+              </For>
+            }
+          </div>
+        </div>
+      </div>
+      <div class={css.panel__footer}>
+        <Show when={!!designArray().length}>
+          <button class={css.panel__button} onClick={handleDesignDeleteAll}>
+            Clear Designs
+          </button>
+        </Show>
+        <button class={css.panel__button} onClick={() => setMemoryState("showAllDesginsPanel", false)}>
+          Close
+        </button>
+      </div>
     </div>
   );
 }

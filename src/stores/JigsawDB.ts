@@ -76,26 +76,6 @@ export default class JigsawDB {
     return Designs.sort((a, b) => b.createdAt - a.createdAt);
   }
 
-  static async deleteDesigns(ids: string[]): Promise<void> {
-    const transaction = this.db!.transaction(this.DESIGN_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(this.DESIGN_STORE_NAME);
-
-    await Promise.all([
-      new Promise<void>((resolve, reject) => {
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error as Error);
-      }),
-      ...ids.map(
-        (id) =>
-          new Promise<void>((resolve, reject) => {
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error as Error);
-          })
-      )
-    ]);
-  }
-
   static async getDesign(id: string): Promise<Design | undefined> {
     const store = this.db!.transaction(this.DESIGN_STORE_NAME, "readonly").objectStore(this.DESIGN_STORE_NAME);
 
@@ -116,6 +96,28 @@ export default class JigsawDB {
     });
   }
 
+  static async deleteDesign(id: string): Promise<void> {
+    const transaction = this.db!.transaction(this.DESIGN_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(this.DESIGN_STORE_NAME);
+
+    await new Promise<void>((resolve, reject) => {
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error as Error);
+    });
+  }
+
+  static async deleteAllDesigns(): Promise<void> {
+    const transaction = this.db!.transaction(this.DESIGN_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(this.DESIGN_STORE_NAME);
+
+    await new Promise<void>((resolve, reject) => {
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error as Error);
+    });
+  }
+
   static async addGridSet(grid: Omit<GridSet, "id" | "createdAt">): Promise<GridSet> {
     const gridSet = { ...grid, id: crypto.randomUUID(), createdAt: Date.now() };
     const transaction = this.db!.transaction(this.GRID_STORE_NAME, "readwrite");
@@ -128,17 +130,6 @@ export default class JigsawDB {
     });
 
     return gridSet;
-  }
-
-  static async deleteGridSet(id: string): Promise<void> {
-    const transaction = this.db!.transaction(this.GRID_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(this.GRID_STORE_NAME);
-
-    await new Promise<void>((resolve, reject) => {
-      const request = store.delete(id);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error as Error);
-    });
   }
 
   static async getGridSet(id: string): Promise<GridSet | undefined> {
@@ -158,6 +149,28 @@ export default class JigsawDB {
       const request = store.getAll();
       request.onerror = () => reject(request.error as Error);
       request.onsuccess = () => resolve((request.result as GridSet[]).sort((a, b) => b.createdAt - a.createdAt));
+    });
+  }
+
+  static async deleteGridSet(id: string): Promise<void> {
+    const transaction = this.db!.transaction(this.GRID_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(this.GRID_STORE_NAME);
+
+    await new Promise<void>((resolve, reject) => {
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error as Error);
+    });
+  }
+
+  static async deleteAllGridSets(): Promise<void> {
+    const transaction = this.db!.transaction(this.GRID_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(this.GRID_STORE_NAME);
+
+    await new Promise<void>((resolve, reject) => {
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error as Error);
     });
   }
 }

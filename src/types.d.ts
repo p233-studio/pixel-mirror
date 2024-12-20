@@ -33,7 +33,7 @@ interface PersistState {
 
 interface MemoryState {
   showAlignmentPopover: boolean;
-  showDesignListPanel: boolean;
+  showAllDesginsPanel: boolean;
   showGridSettingsPanel: boolean;
   designUrl: string | undefined;
   designSize: { width: number; height: number };

@@ -8,7 +8,7 @@ const defaultPersistState = {
   designPosition: { x: 0, y: 0 },
   designScale: 1,
   lockDesignOverlay: false,
-  showDesignOverlay: true,
+  showDesignOverlay: false,
   showVerticalRhythmOverlay: false,
   verticalRhythmHeight: "8px",
   verticalRhythmGridColor: "rgba(255, 0, 0, .05)",
