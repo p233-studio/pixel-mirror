@@ -22,7 +22,7 @@ import IconGridSettings from "~/assets/grid-table-stroke-rounded.svg";
 import IconRelocate from "~/assets/flip-top-stroke-rounded.svg";
 import IconWarning from "~/assets/alert-02-stroke-rounded.svg";
 import IconDelete from "~/assets/delete-02-stroke-rounded.svg";
-import IconTick from "~/assets/checkmark-square-02-stroke-rounded.svg";
+import IconTick from "~/assets/checkmark-circle-02-stroke-rounded.svg";
 import IconUpload from "~/assets/image-upload-stroke-rounded.svg";
 import IconToggle from "~/assets/toggle-on-stroke-rounded.svg";
 
@@ -35,6 +35,17 @@ function toastErrorMessage(error: unknown) {
 export default function App() {
   const [isReady, setIsReady] = createSignal(false);
   const [pageHeight, setPageHeight] = createSignal(0);
+
+  const dimensions = createMemo(() => {
+    // Control menubar morphing through manual size adjustments
+    if (memoryState.showAllDesignsPanel) {
+      return { width: "800px", height: "600px" };
+    }
+    if (memoryState.showGridSettingsPanel) {
+      return { width: "680px", height: "600px" };
+    }
+    return { width: "380px", height: "48px" };
+  });
 
   onMount(() => {
     JigsawDB.init()
@@ -57,34 +68,23 @@ export default function App() {
     });
   });
 
-  const handleClickOutside = (e: MouseEvent) => {
+  const handleOutsideClick = (e: MouseEvent) => {
     const target = e.target as Element;
     if (!target.closest("#_jigsaw-app")) {
       setMemoryState({
-        showAllDesginsPanel: false,
+        showAllDesignsPanel: false,
         showGridSettingsPanel: false
       });
-      window.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("mousedown", handleOutsideClick);
     }
   };
 
   createEffect(() => {
-    if (!memoryState.showAllDesginsPanel && !memoryState.showGridSettingsPanel) return;
-    window.addEventListener("mousedown", handleClickOutside);
+    if (!memoryState.showAllDesignsPanel && !memoryState.showGridSettingsPanel) return;
+    window.addEventListener("mousedown", handleOutsideClick);
     onCleanup(() => {
-      window.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("mousedown", handleOutsideClick);
     });
-  });
-
-  const dimensions = createMemo(() => {
-    // Control menubar morphing through manual size adjustments
-    if (memoryState.showAllDesginsPanel) {
-      return { width: "800px", height: "640px" };
-    }
-    if (memoryState.showGridSettingsPanel) {
-      return { width: "680px", height: "480px" };
-    }
-    return { width: "380px", height: "48px" };
   });
 
   const toggleDesignVisible = () => {
@@ -96,7 +96,7 @@ export default function App() {
   };
 
   const resetDesignOpacity = () => {
-    updatePersistState({ desginOpacity: 0.5 });
+    updatePersistState({ designOpacity: 0.5 });
   };
 
   const showAlignmentPop = () => {
@@ -127,7 +127,7 @@ export default function App() {
     // Skip dangling transitions when position remains unchanged
     if (newPosition.x === x && newPosition.y === y) return;
     setMemoryState({
-      designCachedPosition: newPosition,
+      designBufferedPosition: newPosition,
       enableAnimation: true
     });
     updatePersistState({ designPosition: newPosition });
@@ -145,7 +145,7 @@ export default function App() {
     updatePersistState({ designScale: scale });
   };
 
-  const switchAppPosition = () => {
+  const changeAppPosition = () => {
     const newPosition = persistState.appPosition === "top" ? "bottom" : "top";
     updatePersistState({ appPosition: newPosition });
   };
@@ -177,9 +177,9 @@ export default function App() {
         </Show>
 
         <div
-          class={clsx(css.menuBar, (memoryState.showAllDesginsPanel || memoryState.showGridSettingsPanel) && css.hide)}
+          class={clsx(css.menuBar, (memoryState.showAllDesignsPanel || memoryState.showGridSettingsPanel) && css.hide)}
         >
-          <button class={css.menuButton} onClick={toggleDesignVisible}>
+          <button class={css.menuButton} onClick={toggleDesignVisible} disabled={!memoryState.designUrl}>
             <Show when={persistState.showDesignOverlay} fallback={<IconDesignHide />}>
               <IconDesignShow />
             </Show>
@@ -194,7 +194,7 @@ export default function App() {
             onClick={resetDesignOpacity}
             disabled={!persistState.showDesignOverlay}
           >
-            <span class={css.opacityButton__value}>{Math.floor(persistState.desginOpacity * 100)}</span>
+            <span class={css.opacityButton__value}>{Math.floor(persistState.designOpacity * 100)}</span>
             <IconOpacity />
           </button>
           <button
@@ -219,12 +219,12 @@ export default function App() {
           <button class={css.menuButton} onClick={() => setMemoryState("showGridSettingsPanel", true)}>
             <IconGridSettings />
           </button>
-          <button class={css.menuButton} onClick={() => setMemoryState("showAllDesginsPanel", true)}>
+          <button class={css.menuButton} onClick={() => setMemoryState("showAllDesignsPanel", true)}>
             <IconDesignFolder />
           </button>
           <button
             class={clsx(css.menuButton, persistState.appPosition === "top" && css.rotate)}
-            onClick={switchAppPosition}
+            onClick={changeAppPosition}
           >
             <IconRelocate />
           </button>
@@ -235,12 +235,12 @@ export default function App() {
             css.coordinates,
             (!persistState.showDesignOverlay ||
               memoryState.showAlignmentPopover ||
-              memoryState.showAllDesginsPanel ||
+              memoryState.showAllDesignsPanel ||
               memoryState.showGridSettingsPanel) &&
               css.hide
           )}
         >
-          x:{memoryState.designCachedPosition.x}, y:{memoryState.designCachedPosition.y}
+          x:{memoryState.designBufferedPosition.x}, y:{memoryState.designBufferedPosition.y}
         </div>
 
         <div
@@ -269,7 +269,7 @@ export default function App() {
           <GridSettingsPanel />
         </Show>
 
-        <Show when={memoryState.showAllDesginsPanel}>
+        <Show when={memoryState.showAllDesignsPanel}>
           <AllDesignsPanel />
         </Show>
       </div>
@@ -279,14 +279,14 @@ export default function App() {
 
 function GridSettingsPanel() {
   const [verticalRhythmHeight, setVerticalRhythmHeight] = createSignal(persistState.verticalRhythmHeight);
-  const [verticalRhythmGridColor, setVerticalRhythmGridColor] = createSignal(persistState.verticalRhythmGridColor);
+  const [verticalRhythmColor, setVerticalRhythmColor] = createSignal(persistState.verticalRhythmColor);
   const [gridSetArray, setGridSetArray] = createSignal<GridSet[]>([]);
   const [gridSystemColor, setGridSystemColor] = createSignal(persistState.gridSystemColor);
   const [gridContainerWidth, setGridContainerWidth] = createSignal("");
   const [gridColumns, setGridColumns] = createSignal("");
   const [gutterWidth, setGutterWidth] = createSignal("");
   const [isGutterOnOutside, setIsGutterOnOutside] = createSignal(true);
-  const [gridContainerPosition, setGridContainerPosition] = createSignal<GridPosition>("center");
+  const [gridContainerPosition, setGridContainerPosition] = createSignal<GridSystemPosition>("center");
 
   onMount(() => {
     JigsawDB.getAllGridSets()
@@ -303,22 +303,22 @@ function GridSettingsPanel() {
   };
 
   const updateVerticalRhythmColor = () => {
-    updatePersistState({ verticalRhythmGridColor: verticalRhythmGridColor() });
+    updatePersistState({ verticalRhythmColor: verticalRhythmColor() });
   };
 
   const toggleGridSystemGuide = () => {
     updatePersistState({ showGridSystemOverlay: !persistState.showGridSystemOverlay });
   };
 
-  const updateGridGuideColor = () => {
+  const updateGridSystemColor = () => {
     updatePersistState({ gridSystemColor: gridSystemColor() });
   };
 
-  const handleGridSetCreate = () => {
+  const createGridSet = () => {
     const gridSetData = {
-      width: gridContainerWidth(),
+      width: /^\d+$/.test(gridContainerWidth()) ? `${gridContainerWidth()}px` : gridContainerWidth(),
       columns: +gridColumns(),
-      gutterWidth: gutterWidth(),
+      gutterWidth: /^\d+$/.test(gutterWidth()) ? `${gutterWidth()}px` : gutterWidth(),
       isGutterOnOutside: isGutterOnOutside(),
       position: gridContainerPosition()
     };
@@ -334,7 +334,7 @@ function GridSettingsPanel() {
       .catch(toastErrorMessage);
   };
 
-  const handleGridSetDelete = (id: string) => {
+  const deleteGridSet = (id: string) => {
     JigsawDB.deleteGridSet(id)
       .then(() => {
         setGridSetArray((prev) => prev.filter((gridSet) => gridSet.id !== id));
@@ -342,11 +342,11 @@ function GridSettingsPanel() {
       .catch(toastErrorMessage);
   };
 
-  const handleGridSetActive = (id: string) => {
+  const activeGridSet = (id: string) => {
     updatePersistState({ activeGridSystemId: id });
   };
 
-  const handleGridSettingsReset = () => {
+  const resetGridSettings = () => {
     JigsawDB.resetGridSets()
       .then((defaultArray) => {
         setGridSetArray(defaultArray);
@@ -383,16 +383,15 @@ function GridSettingsPanel() {
               />
               <button onClick={updateVerticalRhythmHeight}>Update</button>
             </fieldset>
-            <fieldset class={css.fieldset} style={{ background: verticalRhythmGridColor() }}>
-              <legend>Vertical Rhythm Grid Color</legend>
+            <fieldset class={css.fieldset} style={{ background: verticalRhythmColor() }}>
+              <legend>Vertical Rhythm Color</legend>
               <input
                 spellcheck={false}
                 type="text"
-                value={verticalRhythmGridColor()}
-                onInput={(e) => setVerticalRhythmGridColor(e.target.value)}
+                value={verticalRhythmColor()}
+                onInput={(e) => setVerticalRhythmColor(e.target.value)}
                 style={{
-                  "font-style":
-                    verticalRhythmGridColor() !== persistState.verticalRhythmGridColor ? "italic" : undefined
+                  "font-style": verticalRhythmColor() !== persistState.verticalRhythmColor ? "italic" : undefined
                 }}
               />
               <button onClick={updateVerticalRhythmColor}>Update</button>
@@ -420,7 +419,7 @@ function GridSettingsPanel() {
                   "font-style": gridSystemColor() !== persistState.gridSystemColor ? "italic" : undefined
                 }}
               />
-              <button onClick={updateGridGuideColor}>Update</button>
+              <button onClick={updateGridSystemColor}>Update</button>
             </fieldset>
             <div class={css.tableWrapper}>
               <table class={css.table}>
@@ -447,7 +446,7 @@ function GridSettingsPanel() {
                           <td class={css.table__bgroup}>
                             <button
                               class={css.table__button}
-                              onClick={() => handleGridSetDelete(gridSet.id)}
+                              onClick={() => deleteGridSet(gridSet.id)}
                               disabled={gridSetArray().length == 1 || persistState.activeGridSystemId === gridSet.id}
                             >
                               <IconDelete />
@@ -458,7 +457,7 @@ function GridSettingsPanel() {
                                 css.activeGridButton,
                                 persistState.activeGridSystemId === gridSet.id && css.active
                               )}
-                              onClick={() => handleGridSetActive(gridSet.id)}
+                              onClick={() => activeGridSet(gridSet.id)}
                               disabled={persistState.activeGridSystemId === gridSet.id}
                             >
                               <IconTick />
@@ -501,7 +500,7 @@ function GridSettingsPanel() {
                     <td>
                       <select
                         value={Number(isGutterOnOutside())}
-                        onChange={(e) => setIsGutterOnOutside(Boolean(e.target.value))}
+                        onChange={(e) => setIsGutterOnOutside(Boolean(+e.target.value))}
                       >
                         <option value="1">Yes</option>
                         <option value="0">No</option>
@@ -510,7 +509,7 @@ function GridSettingsPanel() {
                     <td>
                       <select
                         value={gridContainerPosition()}
-                        onChange={(e) => setGridContainerPosition(e.target.value as GridPosition)}
+                        onChange={(e) => setGridContainerPosition(e.target.value as GridSystemPosition)}
                       >
                         <option value="center">Center</option>
                         <option value="left">Left</option>
@@ -520,7 +519,7 @@ function GridSettingsPanel() {
                     <td colspan={2}>
                       <button
                         class={css.addGridButton}
-                        onClick={handleGridSetCreate}
+                        onClick={createGridSet}
                         disabled={!gridContainerWidth() || !gridColumns() || !gutterWidth()}
                       >
                         Add Grid
@@ -534,7 +533,7 @@ function GridSettingsPanel() {
         </div>
       </div>
       <div class={css.panel__footer}>
-        <button class={css.panel__button} onClick={handleGridSettingsReset}>
+        <button class={css.panel__button} onClick={resetGridSettings}>
           Reset Grid Settings
         </button>
         <button class={css.panel__button} onClick={() => setMemoryState("showGridSettingsPanel", false)}>
@@ -545,9 +544,7 @@ function GridSettingsPanel() {
   );
 }
 
-function DesignCard(
-  props: Design & { handleDesignSelect: (id: string) => void; handleDesignDelete: (id: string) => void }
-) {
+function DesignCard(props: Design & { selectDesign: (id: string) => void; deleteDesign: (id: string) => void }) {
   const [imgUrl, setImgUrl] = createSignal("");
 
   onMount(() => {
@@ -566,12 +563,12 @@ function DesignCard(
         class={css.designCard__img}
         src={imgUrl()}
         draggable={false}
-        onClick={() => props.handleDesignSelect(props.id)}
+        onClick={() => props.selectDesign(props.id)}
         alt=""
       />
       <button
         class={css.designCard__button}
-        onClick={() => props.handleDesignDelete(props.id)}
+        onClick={() => props.deleteDesign(props.id)}
         disabled={persistState.designId === props.id}
       >
         <IconDelete />
@@ -593,7 +590,7 @@ function AllDesignsPanel() {
       .catch(toastErrorMessage);
   });
 
-  const handleDesignUpload = (e: Event) => {
+  const uploadDesigns = (e: Event) => {
     const input = e.target as HTMLInputElement;
     const files = Array.from(input.files || []);
     if (files.length === 0) return;
@@ -603,19 +600,22 @@ function AllDesignsPanel() {
       .catch(toastErrorMessage);
   };
 
-  const handleDesignSelect = (id: string) => {
+  const selectDesign = (id: string) => {
     if (persistState.designId === id) return;
-    updatePersistState({ designId: id, showDesignOverlay: true });
-    setMemoryState("showAllDesginsPanel", false);
+    updatePersistState({
+      designId: id,
+      showDesignOverlay: true
+    });
+    setMemoryState("showAllDesignsPanel", false);
   };
 
-  const handleDesignDelete = (id: string) => {
+  const deleteDesign = (id: string) => {
     JigsawDB.deleteDesign(id)
       .then(() => setDesignArray((prev) => prev.filter((design) => design.id !== id)))
       .catch(toastErrorMessage);
   };
 
-  const handleDesignDeleteAll = () => {
+  const deleteAllDesigns = () => {
     JigsawDB.deleteAllDesigns()
       .then(() => {
         setDesignArray([]);
@@ -625,6 +625,7 @@ function AllDesignsPanel() {
         });
         if (memoryState.designUrl) {
           URL.revokeObjectURL(memoryState.designUrl);
+          setMemoryState("designUrl", undefined);
         }
       })
       .catch(toastErrorMessage);
@@ -637,17 +638,12 @@ function AllDesignsPanel() {
           <div class={css.allDesignsList}>
             <label class={css.uploadButton}>
               <IconUpload class={css.uploadButton__icon} />
-              <input type="file" accept="image/jpeg,image/png" multiple onChange={handleDesignUpload} />
+              <span class={css.uploadButton__text}>Upload</span>
+              <input type="file" accept="image/jpeg,image/png" multiple onChange={uploadDesigns} />
             </label>
             {
               <For each={designArray()}>
-                {(design) => (
-                  <DesignCard
-                    {...design}
-                    handleDesignSelect={handleDesignSelect}
-                    handleDesignDelete={handleDesignDelete}
-                  />
-                )}
+                {(design) => <DesignCard {...design} selectDesign={selectDesign} deleteDesign={deleteDesign} />}
               </For>
             }
           </div>
@@ -655,11 +651,11 @@ function AllDesignsPanel() {
       </div>
       <div class={css.panel__footer}>
         <Show when={!!designArray().length}>
-          <button class={css.panel__button} onClick={handleDesignDeleteAll}>
+          <button class={css.panel__button} onClick={deleteAllDesigns}>
             Clear Designs
           </button>
         </Show>
-        <button class={css.panel__button} onClick={() => setMemoryState("showAllDesginsPanel", false)}>
+        <button class={css.panel__button} onClick={() => setMemoryState("showAllDesignsPanel", false)}>
           Close
         </button>
       </div>
@@ -701,8 +697,8 @@ function DesignOverlay() {
     return {
       width: `${memoryState.designSize.width}px`,
       height: `${memoryState.designSize.height}px`,
-      opacity: memoryState.isSolidMode ? 1 : persistState.desginOpacity,
-      transform: `translate3D(${memoryState.designCachedPosition.x}px, ${memoryState.designCachedPosition.y}px, 0)`,
+      opacity: memoryState.isSolidMode ? 1 : persistState.designOpacity,
+      transform: `translate3D(${memoryState.designBufferedPosition.x}px, ${memoryState.designBufferedPosition.y}px, 0)`,
       cursor: memoryState.isSolidMode
         ? memoryState.isZoomMode
           ? "zoom-out"
@@ -724,7 +720,7 @@ function DesignOverlay() {
         width: img.naturalWidth,
         height: img.naturalHeight
       },
-      designCachedPosition: persistState.designPosition
+      designBufferedPosition: persistState.designPosition
     });
   };
 
@@ -739,7 +735,7 @@ function DesignOverlay() {
             width: memoryState.designOriginalSize.width * persistState.designScale,
             height: memoryState.designOriginalSize.height * persistState.designScale
           },
-          designCachedPosition: persistState.designPosition,
+          designBufferedPosition: persistState.designPosition,
           enableAnimation: true
         });
         window.removeEventListener("mousemove", handleZoomModeInverseMove);
@@ -753,9 +749,9 @@ function DesignOverlay() {
             width: memoryState.designSize.width * 2,
             height: memoryState.designSize.height * 2
           },
-          designCachedPosition: {
-            x: innerWidth / 2 - (e.clientX - memoryState.designCachedPosition.x) * 2,
-            y: innerHeight / 2 - (e.clientY - memoryState.designCachedPosition.y) * 2
+          designBufferedPosition: {
+            x: innerWidth / 2 - (e.clientX - memoryState.designBufferedPosition.x) * 2,
+            y: innerHeight / 2 - (e.clientY - memoryState.designBufferedPosition.y) * 2
           },
           enableAnimation: true
         });
@@ -768,14 +764,14 @@ function DesignOverlay() {
   };
 
   const handleDragMove = (e: MouseEvent) => {
-    setMemoryState("designCachedPosition", (prev) => ({
+    setMemoryState("designBufferedPosition", (prev) => ({
       x: prev.x + e.movementX,
       y: prev.y + e.movementY
     }));
   };
 
   const handleZoomModeInverseMove = (e: MouseEvent) => {
-    setMemoryState("designCachedPosition", (prev) => ({
+    setMemoryState("designBufferedPosition", (prev) => ({
       x: prev.x - e.movementX,
       y: prev.y - e.movementY
     }));
@@ -785,7 +781,7 @@ function DesignOverlay() {
     // Stop dragging
     if (e.button !== 0 || !memoryState.isDragging) return;
     setMemoryState("isDragging", false);
-    updatePersistState({ designPosition: memoryState.designCachedPosition });
+    updatePersistState({ designPosition: memoryState.designBufferedPosition });
     window.removeEventListener("mousemove", handleDragMove);
   };
 
@@ -811,7 +807,7 @@ function DesignOverlay() {
         ArrowLeft: [-1, 0],
         ArrowRight: [1, 0]
       }[e.key] || [0, 0];
-      setMemoryState("designCachedPosition", {
+      setMemoryState("designBufferedPosition", {
         x: persistState.designPosition.x + dx,
         y: persistState.designPosition.y + dy
       });
@@ -836,7 +832,7 @@ function DesignOverlay() {
             width: memoryState.designOriginalSize.width * persistState.designScale,
             height: memoryState.designOriginalSize.height * persistState.designScale
           },
-          designCachedPosition: persistState.designPosition,
+          designBufferedPosition: persistState.designPosition,
           enableAnimation: true
         });
         window.removeEventListener("mousemove", handleZoomModeInverseMove);
@@ -846,15 +842,15 @@ function DesignOverlay() {
       }
     } else if (e.key.startsWith("Arrow")) {
       // Update persisted position on keyup
-      updatePersistState({ designPosition: memoryState.designCachedPosition });
+      updatePersistState({ designPosition: memoryState.designBufferedPosition });
     }
   };
 
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.05 : -0.05;
-    const newOpacity = Math.round((persistState.desginOpacity + delta) * 100) / 100;
-    updatePersistState({ desginOpacity: Math.max(0.1, Math.min(0.9, newOpacity)) });
+    const newOpacity = Math.round((persistState.designOpacity + delta) * 100) / 100;
+    updatePersistState({ designOpacity: Math.max(0.1, Math.min(0.9, newOpacity)) });
   };
 
   const handleTransitionEnd = () => {
@@ -893,7 +889,7 @@ function VerticalRhythmOverlay() {
     <div
       class={css.verticalRhythmOverlay}
       style={{
-        "background-image": `linear-gradient(to bottom, ${persistState.verticalRhythmGridColor} ${persistState.verticalRhythmHeight}, transparent ${persistState.verticalRhythmHeight})`,
+        "background-image": `linear-gradient(to bottom, ${persistState.verticalRhythmColor} ${persistState.verticalRhythmHeight}, transparent ${persistState.verticalRhythmHeight})`,
         "background-size": `100% ${persistState.verticalRhythmHeight.replace(/\d+/, (n) => String(+n * 2))}`
       }}
     />
@@ -921,12 +917,13 @@ function GridSystemOverlay() {
         <div
           style={{
             width: gridSet()!.width,
+            "box-sizing": "border-box",
             "padding-left": gridSet()!.isGutterOnOutside
               ? gridSet()!.gutterWidth.replace(/\d+/, (n) => String(+n / 2))
-              : 0,
+              : undefined,
             "padding-right": gridSet()!.isGutterOnOutside
               ? gridSet()!.gutterWidth.replace(/\d+/, (n) => String(+n / 2))
-              : 0,
+              : undefined,
             display: "flex",
             gap: gridSet()!.gutterWidth
           }}
@@ -942,14 +939,14 @@ function GridSystemOverlay() {
 
 function Toast() {
   onMount(() => {
-    window.addEventListener("mousedown", handleToastClose);
+    window.addEventListener("mousedown", closeToast);
 
     onCleanup(() => {
-      window.removeEventListener("mousedown", handleToastClose);
+      window.removeEventListener("mousedown", closeToast);
     });
   });
 
-  const handleToastClose = (e: MouseEvent) => {
+  const closeToast = (e: MouseEvent) => {
     const target = e.target as Element;
     if (!target.closest("#_jigsaw-toast")) {
       setMemoryState("errorMessage", undefined);

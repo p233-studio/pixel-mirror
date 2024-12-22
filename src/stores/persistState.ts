@@ -4,14 +4,14 @@ const localStorageKeyPrefix = "_J-";
 
 const defaultPersistState = {
   designId: undefined,
-  desginOpacity: 0.5,
+  designOpacity: 0.5,
   designPosition: { x: 0, y: 0 },
   designScale: 1,
-  lockDesignOverlay: false,
   showDesignOverlay: false,
+  lockDesignOverlay: false,
   showVerticalRhythmOverlay: false,
   verticalRhythmHeight: "8px",
-  verticalRhythmGridColor: "rgba(255, 0, 0, .05)",
+  verticalRhythmColor: "rgba(255, 0, 0, .05)",
   showGridSystemOverlay: false,
   activeGridSystemId: "default",
   gridSystemColor: "rgba(255, 0, 0, .05)",

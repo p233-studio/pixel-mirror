@@ -11,20 +11,20 @@ interface GridSet {
   columns: number;
   gutterWidth: string;
   isGutterOnOutside: boolean;
-  position: GridPosition;
+  position: GridSystemPosition;
   createdAt: number;
 }
 
 interface PersistState {
   designId: string | undefined;
-  desginOpacity: number;
+  designOpacity: number;
   designPosition: { x: number; y: number };
   designScale: 0.5 | 1;
-  lockDesignOverlay: boolean;
   showDesignOverlay: boolean;
+  lockDesignOverlay: boolean;
   showVerticalRhythmOverlay: boolean;
   verticalRhythmHeight: string;
-  verticalRhythmGridColor: string;
+  verticalRhythmColor: string;
   showGridSystemOverlay: boolean;
   activeGridSystemId: string | undefined;
   gridSystemColor: string;
@@ -34,11 +34,11 @@ interface PersistState {
 interface MemoryState {
   showAlignmentPopover: boolean;
   showGridSettingsPanel: boolean;
-  showAllDesginsPanel: boolean;
+  showAllDesignsPanel: boolean;
   designUrl: string | undefined;
   designSize: { width: number; height: number };
   designOriginalSize: { width: number; height: number };
-  designCachedPosition: { x: number; y: number };
+  designBufferedPosition: { x: number; y: number };
   isSolidMode: boolean;
   isZoomMode: boolean;
   isDragging: boolean;
@@ -48,4 +48,4 @@ interface MemoryState {
 
 type AlignmentPosition = "top" | "right" | "bottom" | "left" | "center" | "top-center";
 
-type GridPosition = "left" | "center" | "right";
+type GridSystemPosition = "left" | "center" | "right";

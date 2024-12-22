@@ -22,18 +22,15 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   &:disabled {
     cursor: default;
   }
+
+  &:not(:disabled):active {
+    transform: scale(0.95);
+  }
 }
 
 %menu-button {
-  &:not(:disabled) {
-    &:focus,
-    &:hover {
-      background: rgba($black, 0.04);
-    }
-
-    &:active > svg {
-      transform: scale(0.95);
-    }
+  &:not(:disabled):hover {
+    background: rgba($black, 0.04);
   }
 }
 
@@ -95,14 +92,13 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   width: max-content;
   padding: 0.375rem 0.75rem;
   margin: auto;
-  color: #fff;
+  color: $white;
   background: $red;
-  border: 2px solid $white;
+  border: 2px solid;
   border-radius: rhythm(4);
   transform: translateX(-50%);
 
   &__message {
-    font-family: "Arial", sans-serif;
     font-size: 15px;
     line-height: 16px;
   }
@@ -159,9 +155,9 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   padding-left: rhythm(0.5);
   overflow: hidden;
   background: $white;
-  border-top: 2px solid $black;
-  border-right: 2px solid $black;
-  border-left: 2px solid $black;
+  border-top: 2px solid;
+  border-right: 2px solid;
+  border-left: 2px solid;
   border-radius: rhythm(1.5) rhythm(1.5) 0 0;
 }
 
@@ -265,14 +261,6 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     color: $white;
     background: $black;
     border-radius: rhythm(2);
-
-    &:active {
-      transform: scale(0.95);
-    }
-
-    &:focus {
-      outline: 2px solid #ddd;
-    }
   }
 }
 
@@ -283,7 +271,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: rhythm(2);
+    margin-bottom: rhythm(1);
   }
 
   &__heading {
@@ -314,6 +302,10 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
       text-align: center;
     }
 
+    &:active {
+      transform: none !important;
+    }
+
     :global(#_jigsaw-toggle-trigger) {
       transition: transform 0.25s $timing-function;
       transform: translateX(-8px);
@@ -322,10 +314,6 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     &.enabled :global(#_jigsaw-toggle-trigger) {
       transform: translateX(0);
     }
-
-    &:focus {
-      outline: 2px solid #ddd;
-    }
   }
 }
 
@@ -333,7 +321,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   padding: rhythm(1) rhythm(2);
-  margin-bottom: rhythm(3);
+  margin-bottom: rhythm(2);
   border-color: $black;
   border-radius: rhythm(1.5);
 
@@ -369,14 +357,11 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     color: $white;
     background: $black;
     border-radius: rhythm(2);
-
-    &:focus {
-      outline: 2px solid #ddd;
-    }
   }
 }
 
 .tableWrapper {
+  margin-top: rhythm(3);
   overflow: auto;
   border: 2px solid $black;
   border-radius: rhythm(1.5);
@@ -408,18 +393,11 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
       height: rhythm(2.5);
     }
 
-    &:focus {
-      outline: 2px solid #ddd;
-    }
-
     &.activeGridButton {
       opacity: 0;
 
+      &:focus,
       &.active {
-        opacity: 1 !important;
-      }
-
-      &:focus {
         opacity: 1;
       }
     }
@@ -470,32 +448,32 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     td {
       padding: rhythm(1.5);
     }
-  }
 
-  input {
-    width: 72px;
-    height: 24px;
-    padding: 0 rhythm(1);
-    font-size: 14px;
-    border: 1px solid $gray;
-    border-radius: rhythm(0.75);
-    outline: none;
+    input {
+      width: 72px;
+      height: 24px;
+      padding: 0 rhythm(1);
+      font-size: 14px;
+      border: 1px solid $gray;
+      border-radius: rhythm(0.75);
+      outline: none;
 
-    &:focus {
-      outline: 2px solid #ddd;
+      &:focus {
+        outline: 2px solid #ddd;
+      }
     }
-  }
 
-  select {
-    height: 24px;
-    padding: 0 rhythm(0.5);
-    font-size: 14px;
-    border: 1px solid $gray;
-    border-radius: rhythm(0.75);
-    outline: none;
+    select {
+      height: 24px;
+      padding: 0 rhythm(0.5);
+      font-size: 14px;
+      border: 1px solid $gray;
+      border-radius: rhythm(0.75);
+      outline: none;
 
-    &:focus {
-      outline: 2px solid #ddd;
+      &:focus {
+        outline: 2px solid #ddd;
+      }
     }
   }
 }
@@ -516,7 +494,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &:focus {
-    outline: 2px solid #ddd;
+    outline: 2px solid #999;
   }
 }
 
@@ -592,6 +570,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
 .uploadButton {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
@@ -608,6 +587,12 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     padding: rhythm(1.5);
     background: #eee;
     border-radius: rhythm(1.5);
+  }
+
+  &__text {
+    margin-top: rhythm(1);
+    font-size: 16px;
+    line-height: 24px;
   }
 
   > input {
