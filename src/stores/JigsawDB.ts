@@ -148,7 +148,7 @@ export default class JigsawDB {
     return new Promise((resolve, reject) => {
       const request = store.getAll();
       request.onerror = () => reject(request.error as Error);
-      request.onsuccess = () => resolve((request.result as GridSet[]).sort((a, b) => b.createdAt - a.createdAt));
+      request.onsuccess = () => resolve((request.result as GridSet[]).sort((a, b) => a.createdAt - b.createdAt));
     });
   }
 
@@ -163,7 +163,7 @@ export default class JigsawDB {
     });
   }
 
-  static async deleteAllGridSets(): Promise<void> {
+  static async resetGridSets(): Promise<GridSet[]> {
     const transaction = this.db!.transaction(this.GRID_STORE_NAME, "readwrite");
     const store = transaction.objectStore(this.GRID_STORE_NAME);
 
@@ -172,5 +172,14 @@ export default class JigsawDB {
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error as Error);
     });
+
+    const defaultValue = { ...defaultGridSet, createdAt: Date.now() };
+    await new Promise<void>((resolve, reject) => {
+      const request = store.add(defaultValue);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error as Error);
+    });
+
+    return [defaultValue];
   }
 }

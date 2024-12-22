@@ -1,5 +1,6 @@
 $white: #fff;
 $black: #000;
+$gray: #eee;
 $red: #fe0200;
 $max-zIndex: 2147483647;
 $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -23,8 +24,9 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-%action-button {
+%menu-button {
   &:not(:disabled) {
+    &:focus,
     &:hover {
       background: rgba($black, 0.04);
     }
@@ -73,6 +75,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   svg {
+    display: block;
     color: currentcolor;
   }
 
@@ -120,12 +123,8 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
 .menuButton {
   @extend %button;
-  @extend %action-button;
+  @extend %menu-button;
   padding: rhythm(1);
-
-  > svg {
-    display: block;
-  }
 
   &.rotate {
     transform: rotate(180deg);
@@ -168,14 +167,13 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
 .alignmentButton {
   @extend %button;
-  @extend %action-button;
+  @extend %menu-button;
   padding: rhythm(0.5);
   border-radius: rhythm(1);
 
   > svg {
-    display: block;
-    width: 24px;
-    height: 24px;
+    width: rhythm(3);
+    height: rhythm(3);
   }
 }
 
@@ -230,8 +228,9 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
   &__content {
     height: 100%;
-    padding: rhythm(1.5);
+    padding: rhythm(2);
     overflow: auto;
+    overscroll-behavior: contain;
     visibility: hidden;
     opacity: 0;
     will-change: opacity visibility;
@@ -260,32 +259,264 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
   &__button {
     @extend %button;
-    width: 160px;
+    width: 168px;
+    font-size: 15px;
     line-height: rhythm(4);
     color: $white;
     background: $black;
-    border-radius: rhythm(1.25);
+    border-radius: rhythm(2);
 
     &:active {
       transform: scale(0.95);
     }
+
+    &:focus {
+      outline: 2px solid #ddd;
+    }
   }
 }
 
+.gridSettingBox {
+  padding-bottom: rhythm(3);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: rhythm(2);
+  }
+
+  &__heading {
+    margin: 0;
+    font-size: 18px;
+    line-height: rhythm(4);
+  }
+
+  &__toggleButton {
+    @extend %button;
+    display: flex;
+    gap: rhythm(0.5);
+    align-items: center;
+    width: 116px;
+    padding: 0 rhythm(1.25);
+    font-size: 15px;
+    line-height: rhythm(4);
+    color: $white;
+    background: $black;
+    border-radius: rhythm(2);
+
+    > svg {
+      flex: none;
+    }
+
+    > span {
+      flex: 1;
+      text-align: center;
+    }
+
+    :global(#_jigsaw-toggle-trigger) {
+      transition: transform 0.25s $timing-function;
+      transform: translateX(-8px);
+    }
+
+    &.enabled :global(#_jigsaw-toggle-trigger) {
+      transform: translateX(0);
+    }
+
+    &:focus {
+      outline: 2px solid #ddd;
+    }
+  }
+}
+
+.fieldset {
+  display: flex;
+  align-items: center;
+  padding: rhythm(1) rhythm(2);
+  margin-bottom: rhythm(3);
+  border-color: $black;
+  border-radius: rhythm(1.5);
+
+  > legend {
+    padding-right: rhythm(1);
+    padding-left: rhythm(1);
+    font-size: 15px;
+    line-height: 24px;
+    color: $white;
+    background: $black;
+    border-radius: rhythm(0.75);
+  }
+
+  > input {
+    display: block;
+    flex: 1;
+    width: 100%;
+    padding: rhythm(1) rhythm(1) rhythm(1) 0;
+    font-family: monospace;
+    font-size: 16px;
+    line-height: rhythm(3);
+    background: transparent;
+    border: none;
+    outline: none;
+  }
+
+  > button {
+    @extend %button;
+    padding-right: rhythm(1.5);
+    padding-left: rhythm(1.5);
+    font-size: 14px;
+    line-height: rhythm(3);
+    color: $white;
+    background: $black;
+    border-radius: rhythm(2);
+
+    &:focus {
+      outline: 2px solid #ddd;
+    }
+  }
+}
+
+.tableWrapper {
+  overflow: auto;
+  border: 2px solid $black;
+  border-radius: rhythm(1.5);
+}
+
 .table {
-  width: 100%;
-  font-size: 15px;
+  width: max-content;
+  min-width: 100%;
+  font-size: 14px;
   line-height: 16px;
   text-align: left;
+  white-space: nowrap;
   border-spacing: 0;
   border-collapse: collapse;
 
+  &__bgroup {
+    display: flex;
+    gap: rhythm(1);
+    align-items: center;
+    justify-content: space-evenly;
+  }
+
+  &__button {
+    @extend %button;
+    border-radius: rhythm(1);
+
+    > svg {
+      width: rhythm(2.5);
+      height: rhythm(2.5);
+    }
+
+    &:focus {
+      outline: 2px solid #ddd;
+    }
+
+    &.activeGridButton {
+      opacity: 0;
+
+      &.active {
+        opacity: 1 !important;
+      }
+
+      &:focus {
+        opacity: 1;
+      }
+    }
+  }
+
+  > thead {
+    > tr {
+      border-bottom: 1px solid $gray;
+    }
+  }
+
   > tbody {
+    color: #333;
     text-transform: capitalize;
 
-    input {
-      width: 80px;
+    > tr {
+      border-bottom: 1px solid $gray;
+
+      &:hover {
+        .activeGridButton {
+          opacity: 1;
+        }
+      }
+
+      &.active {
+        background: #f9f9f9;
+      }
     }
+  }
+
+  th {
+    padding: rhythm(1.5);
+
+    &:not(:last-child) {
+      border-right: 1px solid $gray;
+    }
+  }
+
+  td {
+    padding: rhythm(1) rhythm(1.5);
+
+    &:not(:last-child) {
+      border-right: 1px solid $gray;
+    }
+  }
+
+  > tfoot {
+    td {
+      padding: rhythm(1.5);
+    }
+  }
+
+  input {
+    width: 72px;
+    height: 24px;
+    padding: 0 rhythm(1);
+    font-size: 14px;
+    border: 1px solid $gray;
+    border-radius: rhythm(0.75);
+    outline: none;
+
+    &:focus {
+      outline: 2px solid #ddd;
+    }
+  }
+
+  select {
+    height: 24px;
+    padding: 0 rhythm(0.5);
+    font-size: 14px;
+    border: 1px solid $gray;
+    border-radius: rhythm(0.75);
+    outline: none;
+
+    &:focus {
+      outline: 2px solid #ddd;
+    }
+  }
+}
+
+.addGridButton {
+  @extend %button;
+  height: rhythm(3);
+  padding-right: rhythm(1.5);
+  padding-left: rhythm(1.5);
+  font-size: 13px;
+  color: $white;
+  background: $black;
+  border: none;
+  border-radius: rhythm(2);
+
+  &:disabled {
+    opacity: 0.5;
+  }
+
+  &:focus {
+    outline: 2px solid #ddd;
   }
 }
 

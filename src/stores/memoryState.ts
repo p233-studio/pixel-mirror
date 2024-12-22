@@ -2,8 +2,8 @@ import { createStore } from "solid-js/store";
 
 const defaultMemoryState = {
   showAlignmentPopover: false,
-  showAllDesginsPanel: false,
   showGridSettingsPanel: false,
+  showAllDesginsPanel: false,
   designUrl: undefined,
   designSize: { width: 0, height: 0 },
   designOriginalSize: { width: 0, height: 0 },

@@ -22,8 +22,9 @@ import IconGridSettings from "~/assets/grid-table-stroke-rounded.svg";
 import IconRelocate from "~/assets/flip-top-stroke-rounded.svg";
 import IconWarning from "~/assets/alert-02-stroke-rounded.svg";
 import IconDelete from "~/assets/delete-02-stroke-rounded.svg";
-import IconTick from "~/assets/checkmark-circle-02-stroke-rounded.svg";
+import IconTick from "~/assets/checkmark-square-02-stroke-rounded.svg";
 import IconUpload from "~/assets/image-upload-stroke-rounded.svg";
+import IconToggle from "~/assets/toggle-on-stroke-rounded.svg";
 
 function toastErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "An error occurred.";
@@ -81,7 +82,7 @@ export default function App() {
       return { width: "800px", height: "640px" };
     }
     if (memoryState.showGridSettingsPanel) {
-      return { width: "600px", height: "360px" };
+      return { width: "680px", height: "480px" };
     }
     return { width: "380px", height: "48px" };
   });
@@ -141,9 +142,7 @@ export default function App() {
       },
       enableAnimation: true
     });
-    updatePersistState({
-      designScale: scale
-    });
+    updatePersistState({ designScale: scale });
   };
 
   const switchAppPosition = () => {
@@ -296,31 +295,26 @@ function GridSettingsPanel() {
   });
 
   const toggleVerticalRhythmGuide = () => {
-    updatePersistState({
-      showVerticalRhythmOverlay: !persistState.showVerticalRhythmOverlay
-    });
+    updatePersistState({ showVerticalRhythmOverlay: !persistState.showVerticalRhythmOverlay });
   };
 
-  const updateVerticalRhythmSettings = () => {
-    updatePersistState({
-      verticalRhythmHeight: verticalRhythmHeight(),
-      verticalRhythmGridColor: verticalRhythmGridColor()
-    });
+  const updateVerticalRhythmHeight = () => {
+    updatePersistState({ verticalRhythmHeight: verticalRhythmHeight() });
+  };
+
+  const updateVerticalRhythmColor = () => {
+    updatePersistState({ verticalRhythmGridColor: verticalRhythmGridColor() });
   };
 
   const toggleGridSystemGuide = () => {
-    updatePersistState({
-      showGridSystemOverlay: !persistState.showGridSystemOverlay
-    });
+    updatePersistState({ showGridSystemOverlay: !persistState.showGridSystemOverlay });
   };
 
   const updateGridGuideColor = () => {
-    updatePersistState({
-      gridSystemColor: gridSystemColor()
-    });
+    updatePersistState({ gridSystemColor: gridSystemColor() });
   };
 
-  const handleAddGridSet = () => {
+  const handleGridSetCreate = () => {
     const gridSetData = {
       width: gridContainerWidth(),
       columns: +gridColumns(),
@@ -330,7 +324,7 @@ function GridSettingsPanel() {
     };
     JigsawDB.addGridSet(gridSetData)
       .then((gridSet) => {
-        setGridSetArray((prev) => [gridSet, ...prev]);
+        setGridSetArray((prev) => [...prev, gridSet]);
         setGridContainerWidth("");
         setGridColumns("");
         setGutterWidth("");
@@ -340,151 +334,209 @@ function GridSettingsPanel() {
       .catch(toastErrorMessage);
   };
 
-  const handleDeletGridSet = (id: string) => {
+  const handleGridSetDelete = (id: string) => {
     JigsawDB.deleteGridSet(id)
-      .then(() => setGridSetArray((prev) => prev.filter((gridSet) => gridSet.id !== id)))
+      .then(() => {
+        setGridSetArray((prev) => prev.filter((gridSet) => gridSet.id !== id));
+      })
       .catch(toastErrorMessage);
   };
 
-  const activeGridSet = (id: string) => {
-    updatePersistState({
-      activeGridSystemId: id
-    });
+  const handleGridSetActive = (id: string) => {
+    updatePersistState({ activeGridSystemId: id });
+  };
+
+  const handleGridSettingsReset = () => {
+    JigsawDB.resetGridSets()
+      .then((defaultArray) => {
+        setGridSetArray(defaultArray);
+        updatePersistState({ activeGridSystemId: "default" });
+      })
+      .catch(toastErrorMessage);
   };
 
   return (
     <div class={css.panel}>
       <div class={css.panel__contentWrapper}>
         <div class={clsx(css.panel__content, !!gridSetArray().length && css.show)}>
-          <div>
-            <h3>Vertical Rhythm</h3>
-            <button onClick={toggleVerticalRhythmGuide}>
-              {persistState.showVerticalRhythmOverlay ? "Hide" : "Show"} vertical rhythm guide
-            </button>
-            <input
-              spellcheck={false}
-              type="text"
-              value={verticalRhythmHeight()}
-              onInput={(e) => setVerticalRhythmHeight(e.target.value)}
-            />
-            <input
-              spellcheck={false}
-              type="text"
-              value={verticalRhythmGridColor()}
-              onInput={(e) => setVerticalRhythmGridColor(e.target.value)}
-            />
-            <button onClick={updateVerticalRhythmSettings}>Update</button>
+          <div class={css.gridSettingBox}>
+            <div class={css.gridSettingBox__header}>
+              <h3 class={css.gridSettingBox__heading}>Vertical Rhythm</h3>
+              <button
+                class={clsx(css.gridSettingBox__toggleButton, persistState.showVerticalRhythmOverlay && css.enabled)}
+                onClick={toggleVerticalRhythmGuide}
+              >
+                <IconToggle />
+                <span>{persistState.showVerticalRhythmOverlay ? "Enabled" : "Disabled"}</span>
+              </button>
+            </div>
+            <fieldset class={css.fieldset}>
+              <legend>Vertical Rhythm Height</legend>
+              <input
+                spellcheck={false}
+                type="text"
+                value={verticalRhythmHeight()}
+                onInput={(e) => setVerticalRhythmHeight(e.target.value)}
+                style={{
+                  "font-style": verticalRhythmHeight() !== persistState.verticalRhythmHeight ? "italic" : undefined
+                }}
+              />
+              <button onClick={updateVerticalRhythmHeight}>Update</button>
+            </fieldset>
+            <fieldset class={css.fieldset} style={{ background: verticalRhythmGridColor() }}>
+              <legend>Vertical Rhythm Grid Color</legend>
+              <input
+                spellcheck={false}
+                type="text"
+                value={verticalRhythmGridColor()}
+                onInput={(e) => setVerticalRhythmGridColor(e.target.value)}
+                style={{
+                  "font-style":
+                    verticalRhythmGridColor() !== persistState.verticalRhythmGridColor ? "italic" : undefined
+                }}
+              />
+              <button onClick={updateVerticalRhythmColor}>Update</button>
+            </fieldset>
           </div>
-          <div>
-            <h3>Grid System</h3>
-            <button onClick={toggleGridSystemGuide}>
-              {persistState.showGridSystemOverlay ? "Hide" : "Show"} grid system guide
-            </button>
-            <input
-              spellcheck={false}
-              type="text"
-              value={gridSystemColor()}
-              onInput={(e) => setGridSystemColor(e.target.value)}
-            />
-            <button onClick={updateGridGuideColor}>Update</button>
-            <table class={css.table}>
-              <thead>
-                <tr>
-                  <th>Width</th>
-                  <th>Columns</th>
-                  <th>Gutter Width</th>
-                  <th>Outer Gutter</th>
-                  <th>Position</th>
-                  <th />
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {
-                  <For each={gridSetArray()}>
-                    {(gridSet) => (
-                      <tr>
-                        <td>{gridSet.width}</td>
-                        <td>{gridSet.columns}</td>
-                        <td>{gridSet.gutterWidth}</td>
-                        <td>{String(gridSet.isGutterOnOutside)}</td>
-                        <td>{gridSet.position}</td>
-                        <td>
-                          <button onClick={() => handleDeletGridSet(gridSet.id)}>
-                            <IconDelete />
-                          </button>
-                        </td>
-                        <td>
-                          <button onClick={() => activeGridSet(gridSet.id)}>
-                            <IconTick />
-                          </button>
-                        </td>
-                      </tr>
-                    )}
-                  </For>
-                }
-                <tr>
-                  <td>
-                    <input
-                      spellcheck={false}
-                      type="text"
-                      placeholder="1140px"
-                      value={gridContainerWidth()}
-                      onInput={(e) => setGridContainerWidth(e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      spellcheck={false}
-                      type="text"
-                      placeholder="12"
-                      value={gridColumns()}
-                      onInput={(e) => setGridColumns(e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      spellcheck={false}
-                      type="text"
-                      placeholder="24px"
-                      value={gutterWidth()}
-                      onInput={(e) => setGutterWidth(e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <select
-                      value={Number(isGutterOnOutside())}
-                      onChange={(e) => setIsGutterOnOutside(Boolean(e.target.value))}
-                    >
-                      <option value="1">True</option>
-                      <option value="0">False</option>
-                    </select>
-                  </td>
-                  <td>
-                    <select
-                      value={gridContainerPosition()}
-                      onChange={(e) => setGridContainerPosition(e.target.value as GridPosition)}
-                    >
-                      <option value="center">Center</option>
-                      <option value="left">Left</option>
-                      <option value="right">Right</option>
-                    </select>
-                  </td>
-                  <td colspan={2}>
-                    <button
-                      onClick={handleAddGridSet}
-                      disabled={!gridContainerWidth() || !gridColumns() || !gutterWidth()}
-                    >
-                      Add Grid
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class={css.gridSettingBox}>
+            <div class={css.gridSettingBox__header}>
+              <h3 class={css.gridSettingBox__heading}>Grid System</h3>
+              <button
+                class={clsx(css.gridSettingBox__toggleButton, persistState.showGridSystemOverlay && css.enabled)}
+                onClick={toggleGridSystemGuide}
+              >
+                <IconToggle />
+                <span>{persistState.showGridSystemOverlay ? "Enabled" : "Disabled"}</span>
+              </button>
+            </div>
+            <fieldset class={css.fieldset} style={{ background: gridSystemColor() }}>
+              <legend>Grid System Color</legend>
+              <input
+                spellcheck={false}
+                type="text"
+                value={gridSystemColor()}
+                onInput={(e) => setGridSystemColor(e.target.value)}
+                style={{
+                  "font-style": gridSystemColor() !== persistState.gridSystemColor ? "italic" : undefined
+                }}
+              />
+              <button onClick={updateGridGuideColor}>Update</button>
+            </fieldset>
+            <div class={css.tableWrapper}>
+              <table class={css.table}>
+                <thead>
+                  <tr>
+                    <th>Width</th>
+                    <th>Columns</th>
+                    <th>Gutter Width</th>
+                    <th>Outer Gutter</th>
+                    <th>Position</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {
+                    <For each={gridSetArray()}>
+                      {(gridSet) => (
+                        <tr class={clsx(persistState.activeGridSystemId === gridSet.id && css.active)}>
+                          <td>{gridSet.width}</td>
+                          <td>{gridSet.columns}</td>
+                          <td>{gridSet.gutterWidth}</td>
+                          <td>{gridSet.isGutterOnOutside ? "Yes" : "No"}</td>
+                          <td>{gridSet.position}</td>
+                          <td class={css.table__bgroup}>
+                            <button
+                              class={css.table__button}
+                              onClick={() => handleGridSetDelete(gridSet.id)}
+                              disabled={gridSetArray().length == 1 || persistState.activeGridSystemId === gridSet.id}
+                            >
+                              <IconDelete />
+                            </button>
+                            <button
+                              class={clsx(
+                                css.table__button,
+                                css.activeGridButton,
+                                persistState.activeGridSystemId === gridSet.id && css.active
+                              )}
+                              onClick={() => handleGridSetActive(gridSet.id)}
+                              disabled={persistState.activeGridSystemId === gridSet.id}
+                            >
+                              <IconTick />
+                            </button>
+                          </td>
+                        </tr>
+                      )}
+                    </For>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>
+                      <input
+                        spellcheck={false}
+                        type="text"
+                        placeholder="1140px"
+                        value={gridContainerWidth()}
+                        onInput={(e) => setGridContainerWidth(e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        spellcheck={false}
+                        type="text"
+                        placeholder="12"
+                        value={gridColumns()}
+                        onInput={(e) => setGridColumns(e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        spellcheck={false}
+                        type="text"
+                        placeholder="24px"
+                        value={gutterWidth()}
+                        onInput={(e) => setGutterWidth(e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <select
+                        value={Number(isGutterOnOutside())}
+                        onChange={(e) => setIsGutterOnOutside(Boolean(e.target.value))}
+                      >
+                        <option value="1">Yes</option>
+                        <option value="0">No</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        value={gridContainerPosition()}
+                        onChange={(e) => setGridContainerPosition(e.target.value as GridPosition)}
+                      >
+                        <option value="center">Center</option>
+                        <option value="left">Left</option>
+                        <option value="right">Right</option>
+                      </select>
+                    </td>
+                    <td colspan={2}>
+                      <button
+                        class={css.addGridButton}
+                        onClick={handleGridSetCreate}
+                        disabled={!gridContainerWidth() || !gridColumns() || !gutterWidth()}
+                      >
+                        Add Grid
+                      </button>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
       </div>
       <div class={css.panel__footer}>
+        <button class={css.panel__button} onClick={handleGridSettingsReset}>
+          Reset Grid Settings
+        </button>
         <button class={css.panel__button} onClick={() => setMemoryState("showGridSettingsPanel", false)}>
           Close
         </button>
@@ -738,7 +790,7 @@ function DesignOverlay() {
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    if ((e.target as Element).tagName === "INPUT") return;
+    if (["INPUT", "SELECT"].includes((e.target as Element).tagName)) return;
 
     if (e.key === "Control") {
       // Enable opacity control
@@ -769,7 +821,7 @@ function DesignOverlay() {
   };
 
   const handleKeyUp = (e: KeyboardEvent) => {
-    if ((e.target as Element).tagName === "INPUT") return;
+    if (["INPUT", "SELECT"].includes((e.target as Element).tagName)) return;
 
     if (e.key === "Control") {
       // Disable opacity control
