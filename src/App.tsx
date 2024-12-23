@@ -590,14 +590,30 @@ function AllDesignsPanel() {
       .catch(toastErrorMessage);
   });
 
-  const uploadDesigns = (e: Event) => {
-    const input = e.target as HTMLInputElement;
-    const files = Array.from(input.files || []);
+  const uploadDesigns = (files: File[]) => {
     if (files.length === 0) return;
 
     JigsawDB.uploadDesign(files)
       .then((newAddedDesigns) => setDesignArray((prev) => [...newAddedDesigns, ...prev]))
       .catch(toastErrorMessage);
+  };
+
+  const handleInputChange = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    uploadDesigns(files);
+  };
+
+  const handleDesignsDrop = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = Array.from(e.dataTransfer?.files || []).filter((i) => ["image/jpeg", "image/png"].includes(i.type));
+    uploadDesigns(files);
+  };
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const selectDesign = (id: string) => {
@@ -634,12 +650,16 @@ function AllDesignsPanel() {
   return (
     <div class={css.panel}>
       <div class={css.panel__contentWrapper}>
-        <div class={clsx(css.panel__content, isReady() && css.show)}>
+        <div
+          class={clsx(css.panel__content, isReady() && css.show)}
+          onDrop={handleDesignsDrop}
+          onDragOver={handleDragOver}
+        >
           <div class={css.allDesignsList}>
             <label class={css.uploadButton}>
               <IconUpload class={css.uploadButton__icon} />
               <span class={css.uploadButton__text}>Upload</span>
-              <input type="file" accept="image/jpeg,image/png" multiple onChange={uploadDesigns} />
+              <input type="file" accept="image/jpeg,image/png" multiple onChange={handleInputChange} />
             </label>
             {
               <For each={designArray()}>
