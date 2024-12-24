@@ -34,7 +34,6 @@ function toastErrorMessage(error: unknown) {
 
 export default function App() {
   const [isReady, setIsReady] = createSignal(false);
-  const [pageHeight, setPageHeight] = createSignal(0);
 
   const dimensions = createMemo(() => {
     // Control menubar morphing through manual size adjustments
@@ -51,21 +50,6 @@ export default function App() {
     JigsawDB.init()
       .then(() => setIsReady(true))
       .catch(toastErrorMessage);
-  });
-
-  onMount(() => {
-    // Instead of modifying the host project's HTML element with `position: relative`,
-    // we use ResizeObserver to detect the actual scrollHeight.
-    // This ensures zero style interference with the host project.
-    const updateHeight = () => {
-      setPageHeight(document.documentElement.scrollHeight);
-    };
-    const resizeObserver = new ResizeObserver(updateHeight);
-    resizeObserver.observe(document.documentElement);
-
-    onCleanup(() => {
-      resizeObserver.disconnect();
-    });
   });
 
   const handleOutsideClick = (e: MouseEvent) => {
@@ -152,7 +136,7 @@ export default function App() {
 
   return (
     <Show when={isReady()}>
-      <div class={css.overlayContainer} style={{ height: `${pageHeight()}px` }}>
+      <div class={css.overlayContainer}>
         <DesignOverlay />
         <Show when={persistState.showVerticalRhythmOverlay && !memoryState.isZoomMode}>
           <VerticalRhythmOverlay />

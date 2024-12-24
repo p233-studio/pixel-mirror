@@ -34,6 +34,13 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+:global(:root) {
+  // Sets the `position` of the `:root` element to `relative`.
+  // This ensures overlays work correctly with minimal impact on the host project.
+  // Please verify compatibility with your project.
+  position: relative;
+}
+
 .hide {
   display: none !important;
 }
@@ -607,10 +614,9 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
 .overlayContainer {
   position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
+  inset: 0;
   z-index: $max-zIndex - 1;
+  min-height: 100vh;
   overflow: hidden;
   pointer-events: none;
 }
