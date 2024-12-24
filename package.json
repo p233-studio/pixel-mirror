@@ -1,19 +1,35 @@
 {
-  "name": "jigsaw",
-  "version": "0.0.0",
+  "name": "@p233-studio/jigsaw",
+  "version": "1.0.0",
   "type": "module",
+  "files": [
+    "dist",
+    "plugins"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./vite": "./plugins/vite.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/p233-studio/jigsaw.git"
+  },
+  "keywords": [
+    "solid",
+    "vite",
+    "design",
+    "jigsaw"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "tsc && eslint --fix && stylelint --fix ./src/**/*.scss",
-    "prepare": "husky"
-  },
-  "dependencies": {
-    "clsx": "^2.1.1",
-    "solid-js": "^1.9.3"
+    "prepare": "husky",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
+    "clsx": "^2.1.1",
     "cssnano": "^7.0.6",
     "cssnano-preset-advanced": "^7.0.6",
     "eslint": "^9.17.0",
@@ -24,12 +40,13 @@
     "lint-staged": "^15.2.11",
     "prettier": "^3.4.2",
     "sass": "^1.83.0",
+    "solid-js": "^1.9.3",
     "stylelint": "^16.12.0",
     "stylelint-config-recess-order": "^5.1.1",
     "stylelint-prettier": "^5.0.2",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.18.1",
-    "vite": "^6.0.3",
+    "typescript-eslint": "^8.18.2",
+    "vite": "^6.0.5",
     "vite-plugin-css-injected-by-js": "^3.5.2",
     "vite-plugin-solid": "^2.11.0",
     "vite-plugin-solid-svg": "^0.8.1"

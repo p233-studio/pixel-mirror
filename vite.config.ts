@@ -33,7 +33,17 @@ export default defineConfig({
   css: {
     modules: modulesConfig,
     postcss: {
-      plugins: [cssnano({ preset: ["cssnano-preset-advanced", { discardUnused: { fontFace: false } }] })]
+      plugins: [
+        cssnano({
+          preset: [
+            "cssnano-preset-advanced",
+            {
+              discardUnused: { fontFace: false },
+              zindex: false
+            }
+          ]
+        })
+      ]
     },
     preprocessorOptions: {
       scss: {
@@ -43,5 +53,13 @@ export default defineConfig({
   },
   resolve: {
     alias: [{ find: "~", replacement: "/src/" }]
+  },
+  build: {
+    lib: {
+      entry: "src/index.tsx",
+      name: "Jigsaw",
+      formats: ["es"],
+      fileName: () => `index.js`
+    }
   }
 });
