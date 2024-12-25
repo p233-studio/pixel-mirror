@@ -13,8 +13,8 @@ const defaultGridSet: Omit<GridSet, "createdAt"> = {
   position: "center"
 };
 
-export default class JigsawDB {
-  private static readonly DB_NAME = "JigsawDB";
+export default class PixelMirrorDB {
+  private static readonly DB_NAME = "PixelMirrorDB";
   private static readonly DESIGN_STORE_NAME = "designs";
   private static readonly GRID_STORE_NAME = "grids";
   private static readonly VERSION = 1;

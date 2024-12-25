@@ -313,12 +313,12 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
       transform: none !important;
     }
 
-    :global(#_jigsaw-toggle-trigger) {
+    :global(#_pixel-mirror-toggle-trigger) {
       transition: transform 0.25s $timing-function;
       transform: translateX(-8px);
     }
 
-    &.enabled :global(#_jigsaw-toggle-trigger) {
+    &.enabled :global(#_pixel-mirror-toggle-trigger) {
       transform: translateX(0);
     }
   }

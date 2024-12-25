@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { onMount, createSignal, createEffect, createMemo, onCleanup, Show, For } from "solid-js";
-import JigsawDB from "./stores/JigsawDB";
+import PixelMirrorDB from "./stores/PixelMirrorDB";
 import { persistState, updatePersistState } from "./stores/persistState";
 import { memoryState, setMemoryState } from "./stores/memoryState";
 import css from "./App.module.scss";
@@ -47,14 +47,14 @@ export default function App() {
   });
 
   onMount(() => {
-    JigsawDB.init()
+    PixelMirrorDB.init()
       .then(() => setIsReady(true))
       .catch(toastErrorMessage);
   });
 
   const handleOutsideClick = (e: MouseEvent) => {
     const target = e.target as Element;
-    if (!target.closest("#_jigsaw-app")) {
+    if (!target.closest("#_pixel-mirror-app")) {
       setMemoryState({
         showAllDesignsPanel: false,
         showGridSettingsPanel: false
@@ -90,7 +90,7 @@ export default function App() {
 
   const hideAlignmentPop = (e: MouseEvent) => {
     const target = e.relatedTarget as Element | null;
-    if (!target?.closest("#_jigsaw-popover")) {
+    if (!target?.closest("#_pixel-mirror-popover")) {
       setMemoryState("showAlignmentPopover", false);
     }
   };
@@ -147,7 +147,7 @@ export default function App() {
       </div>
 
       <div
-        id="_jigsaw-app"
+        id="_pixel-mirror-app"
         class={clsx(
           css.app,
           memoryState.isSolidMode && css.hide,
@@ -228,7 +228,7 @@ export default function App() {
         </div>
 
         <div
-          id="_jigsaw-popover"
+          id="_pixel-mirror-popover"
           class={clsx(css.alignmentPopover, !memoryState.showAlignmentPopover && css.hide)}
           onMouseLeave={hideAlignmentPop}
         >
@@ -273,7 +273,7 @@ function GridSettingsPanel() {
   const [gridContainerPosition, setGridContainerPosition] = createSignal<GridSystemPosition>("center");
 
   onMount(() => {
-    JigsawDB.getAllGridSets()
+    PixelMirrorDB.getAllGridSets()
       .then((gridSets) => setGridSetArray(gridSets))
       .catch(toastErrorMessage);
   });
@@ -306,7 +306,7 @@ function GridSettingsPanel() {
       isGutterOnOutside: isGutterOnOutside(),
       position: gridContainerPosition()
     };
-    JigsawDB.addGridSet(gridSetData)
+    PixelMirrorDB.addGridSet(gridSetData)
       .then((gridSet) => {
         setGridSetArray((prev) => [...prev, gridSet]);
         setGridContainerWidth("");
@@ -319,7 +319,7 @@ function GridSettingsPanel() {
   };
 
   const deleteGridSet = (id: string) => {
-    JigsawDB.deleteGridSet(id)
+    PixelMirrorDB.deleteGridSet(id)
       .then(() => {
         setGridSetArray((prev) => prev.filter((gridSet) => gridSet.id !== id));
       })
@@ -331,7 +331,7 @@ function GridSettingsPanel() {
   };
 
   const resetGridSettings = () => {
-    JigsawDB.resetGridSets()
+    PixelMirrorDB.resetGridSets()
       .then((defaultArray) => {
         setGridSetArray(defaultArray);
         updatePersistState({ activeGridSystemId: "default" });
@@ -566,7 +566,7 @@ function AllDesignsPanel() {
   const [designArray, setDesignArray] = createSignal<Design[]>([]);
 
   onMount(() => {
-    JigsawDB.getAllDesigns()
+    PixelMirrorDB.getAllDesigns()
       .then((designs) => {
         setDesignArray(designs);
         setIsReady(true);
@@ -577,7 +577,7 @@ function AllDesignsPanel() {
   const uploadDesigns = (files: File[]) => {
     if (files.length === 0) return;
 
-    JigsawDB.uploadDesign(files)
+    PixelMirrorDB.uploadDesign(files)
       .then((newAddedDesigns) => setDesignArray((prev) => [...newAddedDesigns, ...prev]))
       .catch(toastErrorMessage);
   };
@@ -610,13 +610,13 @@ function AllDesignsPanel() {
   };
 
   const deleteDesign = (id: string) => {
-    JigsawDB.deleteDesign(id)
+    PixelMirrorDB.deleteDesign(id)
       .then(() => setDesignArray((prev) => prev.filter((design) => design.id !== id)))
       .catch(toastErrorMessage);
   };
 
   const deleteAllDesigns = () => {
-    JigsawDB.deleteAllDesigns()
+    PixelMirrorDB.deleteAllDesigns()
       .then(() => {
         setDesignArray([]);
         updatePersistState({
@@ -670,7 +670,7 @@ function AllDesignsPanel() {
 function DesignOverlay() {
   createEffect(() => {
     if (!persistState.designId) return;
-    JigsawDB.getDesign(persistState.designId)
+    PixelMirrorDB.getDesign(persistState.designId)
       .then((design) => {
         if (!design) {
           throw new Error("Failed to load design image.");
@@ -905,7 +905,7 @@ function GridSystemOverlay() {
 
   createEffect(() => {
     if (!persistState.activeGridSystemId) return;
-    JigsawDB.getGridSet(persistState.activeGridSystemId)
+    PixelMirrorDB.getGridSet(persistState.activeGridSystemId)
       .then((gridSet) => {
         if (!gridSet) {
           throw new Error("Failed to load grid system.");
@@ -952,13 +952,13 @@ function Toast() {
 
   const closeToast = (e: MouseEvent) => {
     const target = e.target as Element;
-    if (!target.closest("#_jigsaw-toast")) {
+    if (!target.closest("#_pixel-mirror-toast")) {
       setMemoryState("errorMessage", undefined);
     }
   };
 
   return (
-    <div id="_jigsaw-toast" class={css.toast}>
+    <div id="_pixel-mirror-toast" class={css.toast}>
       <IconWarning />
       <span class={css.toast__message}>{memoryState.errorMessage}</span>
     </div>

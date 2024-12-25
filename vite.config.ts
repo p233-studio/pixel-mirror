@@ -21,7 +21,7 @@ if (process.env.NODE_ENV === "production") {
         hashSet[i] = true;
       });
     },
-    generateScopedName: "_J-[hash:base64:3]"
+    generateScopedName: "_PM-[hash:base64:3]"
   };
 }
 
@@ -57,7 +57,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: "src/index.tsx",
-      name: "Jigsaw",
+      name: "PixelMirror",
       formats: ["es"],
       fileName: () => `index.js`
     }
