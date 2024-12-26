@@ -81,6 +81,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   svg {
     display: block;
     color: currentcolor;
+    fill: none;
   }
 
   * {
