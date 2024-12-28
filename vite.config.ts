@@ -58,7 +58,7 @@ export default defineConfig({
     lib: {
       entry: "src/index.tsx",
       name: "PixelMirror",
-      formats: ["es"],
+      formats: ["iife"],
       fileName: () => `index.js`
     }
   }

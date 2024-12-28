@@ -33,7 +33,7 @@ The plugin is automatically injected into your HTML during development and will 
 If you're not using Vite, you can integrate Pixel Mirror by injecting its script file into your HTML, served via a CDN:
 
 ``` html
-<script type="module" src="https://cdn.jsdelivr.net/npm/pixel-mirror/dist/index.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/pixel-mirror/dist/index.js"></script>
 ```
 
 This allows you to use Pixel Mirror out of the box without additional setup. Remember to remove the script in the production environment.
