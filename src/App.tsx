@@ -3,7 +3,6 @@ import { onMount, createSignal, createEffect, createMemo, onCleanup, Show, For }
 import PixelMirrorDB from "./stores/PixelMirrorDB";
 import { persistState, updatePersistState } from "./stores/persistState";
 import { memoryState, setMemoryState } from "./stores/memoryState";
-import css from "./App.module.scss";
 
 import IconDesignShow from "~/assets/image-02-stroke-rounded.svg";
 import IconDesignHide from "~/assets/image-not-found-01-stroke-rounded.svg";
@@ -53,8 +52,7 @@ export default function App() {
   });
 
   const handleOutsideClick = (e: MouseEvent) => {
-    const target = e.target as Element;
-    if (!target.closest("#_pixel-mirror-app")) {
+    if (!e.composedPath().find((el) => el instanceof Element && el.id === "app-bar")) {
       setMemoryState({
         showAllDesignsPanel: false,
         showGridSettingsPanel: false
@@ -90,7 +88,7 @@ export default function App() {
 
   const hideAlignmentPop = (e: MouseEvent) => {
     const target = e.relatedTarget as Element | null;
-    if (!target?.closest("#_pixel-mirror-popover")) {
+    if (!target?.closest("#popover")) {
       setMemoryState("showAlignmentPopover", false);
     }
   };
@@ -136,7 +134,7 @@ export default function App() {
 
   return (
     <Show when={isReady()}>
-      <div class={css.overlayContainer}>
+      <div class="overlay-container">
         <DesignOverlay />
         <Show when={persistState.showVerticalRhythmOverlay && !memoryState.isZoomMode}>
           <VerticalRhythmOverlay />
@@ -147,12 +145,12 @@ export default function App() {
       </div>
 
       <div
-        id="_pixel-mirror-app"
+        id="app-bar"
         class={clsx(
-          css.app,
-          memoryState.isSolidMode && css.hide,
-          memoryState.isDragging && css.noEvents,
-          persistState.appPosition === "top" && css.top
+          "app-bar",
+          memoryState.isSolidMode && "hide",
+          memoryState.isDragging && "no-events",
+          persistState.appPosition === "top" && "top"
         )}
         style={dimensions()}
       >
@@ -160,29 +158,27 @@ export default function App() {
           <Toast />
         </Show>
 
-        <div
-          class={clsx(css.menuBar, (memoryState.showAllDesignsPanel || memoryState.showGridSettingsPanel) && css.hide)}
-        >
-          <button class={css.menuButton} onClick={toggleDesignVisible} disabled={!memoryState.designUrl}>
+        <div class={clsx("menu-bar", (memoryState.showAllDesignsPanel || memoryState.showGridSettingsPanel) && "hide")}>
+          <button class="menu-button" onClick={toggleDesignVisible} disabled={!memoryState.designUrl}>
             <Show when={persistState.showDesignOverlay} fallback={<IconDesignHide />}>
               <IconDesignShow />
             </Show>
           </button>
-          <button class={css.menuButton} onClick={toggleDesignLock} disabled={!persistState.showDesignOverlay}>
+          <button class="menu-button" onClick={toggleDesignLock} disabled={!persistState.showDesignOverlay}>
             <Show when={persistState.lockDesignOverlay} fallback={<IconUnlock />}>
               <IconLock />
             </Show>
           </button>
           <button
-            class={clsx(css.menuButton, css.opacityButton)}
+            class={clsx("menu-button", "opacity-button")}
             onClick={resetDesignOpacity}
             disabled={!persistState.showDesignOverlay}
           >
-            <span class={css.opacityButton__value}>{Math.floor(persistState.designOpacity * 100)}</span>
+            <span class="opacity-button__value">{Math.floor(persistState.designOpacity * 100)}</span>
             <IconOpacity />
           </button>
           <button
-            class={css.menuButton}
+            class="menu-button"
             onClick={() => adjustDesignAlignment("top-center")}
             onMouseEnter={showAlignmentPop}
             onMouseLeave={hideAlignmentPop}
@@ -191,23 +187,23 @@ export default function App() {
             <IconAlignment />
           </button>
           <button
-            class={clsx(css.menuButton, css.scaleButton)}
+            class={clsx("menu-button", "scale-button")}
             onClick={adjustDesignScale}
             disabled={!persistState.showDesignOverlay}
           >
-            <span class={css.scaleButton__value}>
+            <span class="scale-button__value">
               {persistState.designScale === 0.5 ? ".5" : persistState.designScale.toString()}x
             </span>
             <IconScale />
           </button>
-          <button class={css.menuButton} onClick={() => setMemoryState("showGridSettingsPanel", true)}>
+          <button class="menu-button" onClick={() => setMemoryState("showGridSettingsPanel", true)}>
             <IconGridSettings />
           </button>
-          <button class={css.menuButton} onClick={() => setMemoryState("showAllDesignsPanel", true)}>
+          <button class="menu-button" onClick={() => setMemoryState("showAllDesignsPanel", true)}>
             <IconDesignFolder />
           </button>
           <button
-            class={clsx(css.menuButton, persistState.appPosition === "top" && css.rotate)}
+            class={clsx("menu-button", persistState.appPosition === "top" && "rotate")}
             onClick={changeAppPosition}
           >
             <IconRelocate />
@@ -216,35 +212,35 @@ export default function App() {
 
         <div
           class={clsx(
-            css.coordinates,
+            "coordinates",
             (!persistState.showDesignOverlay ||
               memoryState.showAlignmentPopover ||
               memoryState.showAllDesignsPanel ||
               memoryState.showGridSettingsPanel) &&
-              css.hide
+              "hide"
           )}
         >
           x:{memoryState.designBufferedPosition.x}, y:{memoryState.designBufferedPosition.y}
         </div>
 
         <div
-          id="_pixel-mirror-popover"
-          class={clsx(css.alignmentPopover, !memoryState.showAlignmentPopover && css.hide)}
+          id="popover"
+          class={clsx("alignment-popover", !memoryState.showAlignmentPopover && "hide")}
           onMouseLeave={hideAlignmentPop}
         >
-          <button class={css.alignmentButton} onClick={() => adjustDesignAlignment("left")}>
+          <button class="alignment-button" onClick={() => adjustDesignAlignment("left")}>
             <IconAlignmentLeft />
           </button>
-          <button class={css.alignmentButton} onClick={() => adjustDesignAlignment("top")}>
+          <button class="alignment-button" onClick={() => adjustDesignAlignment("top")}>
             <IconAlignmentTop />
           </button>
-          <button class={css.alignmentButton} onClick={() => adjustDesignAlignment("center")}>
+          <button class="alignment-button" onClick={() => adjustDesignAlignment("center")}>
             <IconAlignmentCenter />
           </button>
-          <button class={css.alignmentButton} onClick={() => adjustDesignAlignment("bottom")}>
+          <button class="alignment-button" onClick={() => adjustDesignAlignment("bottom")}>
             <IconAlignmentBottom />
           </button>
-          <button class={css.alignmentButton} onClick={() => adjustDesignAlignment("right")}>
+          <button class="alignment-button" onClick={() => adjustDesignAlignment("right")}>
             <IconAlignmentRight />
           </button>
         </div>
@@ -340,21 +336,21 @@ function GridSettingsPanel() {
   };
 
   return (
-    <div class={css.panel}>
-      <div class={css.panel__contentWrapper}>
-        <div class={clsx(css.panel__content, !!gridSetArray().length && css.show)}>
-          <div class={css.gridSettingBox}>
-            <div class={css.gridSettingBox__header}>
-              <h3 class={css.gridSettingBox__heading}>Vertical Rhythm</h3>
+    <div class="panel">
+      <div class="panel__content-wrapper">
+        <div class={clsx("panel__content", !!gridSetArray().length && "show")}>
+          <div class="grid-setting-box">
+            <div class="grid-setting-box__header">
+              <h3 class="grid-setting-box__heading">Vertical Rhythm</h3>
               <button
-                class={clsx(css.gridSettingBox__toggleButton, persistState.showVerticalRhythmOverlay && css.enabled)}
+                class={clsx("grid-setting-box__toggle-button", persistState.showVerticalRhythmOverlay && "enabled")}
                 onClick={toggleVerticalRhythmGuide}
               >
                 <IconToggle />
                 <span>{persistState.showVerticalRhythmOverlay ? "Enabled" : "Disabled"}</span>
               </button>
             </div>
-            <fieldset class={css.fieldset}>
+            <fieldset class="fieldset">
               <legend>Vertical Rhythm Height</legend>
               <input
                 spellcheck={false}
@@ -367,7 +363,7 @@ function GridSettingsPanel() {
               />
               <button onClick={updateVerticalRhythmHeight}>Update</button>
             </fieldset>
-            <fieldset class={css.fieldset} style={{ background: verticalRhythmColor() }}>
+            <fieldset class="fieldset" style={{ background: verticalRhythmColor() }}>
               <legend>Vertical Rhythm Color</legend>
               <input
                 spellcheck={false}
@@ -381,18 +377,18 @@ function GridSettingsPanel() {
               <button onClick={updateVerticalRhythmColor}>Update</button>
             </fieldset>
           </div>
-          <div class={css.gridSettingBox}>
-            <div class={css.gridSettingBox__header}>
-              <h3 class={css.gridSettingBox__heading}>Grid System</h3>
+          <div class="grid-setting-box">
+            <div class="grid-setting-box__header">
+              <h3 class="grid-setting-box__heading">Grid System</h3>
               <button
-                class={clsx(css.gridSettingBox__toggleButton, persistState.showGridSystemOverlay && css.enabled)}
+                class={clsx("grid-setting-box__toggle-button", persistState.showGridSystemOverlay && "enabled")}
                 onClick={toggleGridSystemGuide}
               >
                 <IconToggle />
                 <span>{persistState.showGridSystemOverlay ? "Enabled" : "Disabled"}</span>
               </button>
             </div>
-            <fieldset class={css.fieldset} style={{ background: gridSystemColor() }}>
+            <fieldset class="fieldset" style={{ background: gridSystemColor() }}>
               <legend>Grid System Color</legend>
               <input
                 spellcheck={false}
@@ -405,8 +401,8 @@ function GridSettingsPanel() {
               />
               <button onClick={updateGridSystemColor}>Update</button>
             </fieldset>
-            <div class={css.tableWrapper}>
-              <table class={css.table}>
+            <div class="table-wrapper">
+              <table class="table">
                 <thead>
                   <tr>
                     <th>Width</th>
@@ -421,15 +417,15 @@ function GridSettingsPanel() {
                   {
                     <For each={gridSetArray()}>
                       {(gridSet) => (
-                        <tr class={clsx(persistState.activeGridSystemId === gridSet.id && css.active)}>
+                        <tr class={clsx(persistState.activeGridSystemId === gridSet.id && "active")}>
                           <td>{gridSet.width}</td>
                           <td>{gridSet.columns}</td>
                           <td>{gridSet.gutterWidth}</td>
                           <td>{gridSet.isGutterOnOutside ? "Yes" : "No"}</td>
                           <td>{gridSet.position}</td>
-                          <td class={css.table__bgroup}>
+                          <td class="table__bgroup">
                             <button
-                              class={css.table__button}
+                              class="table__button"
                               onClick={() => deleteGridSet(gridSet.id)}
                               disabled={gridSetArray().length == 1 || persistState.activeGridSystemId === gridSet.id}
                             >
@@ -437,9 +433,9 @@ function GridSettingsPanel() {
                             </button>
                             <button
                               class={clsx(
-                                css.table__button,
-                                css.activeGridButton,
-                                persistState.activeGridSystemId === gridSet.id && css.active
+                                "table__button",
+                                "active-grid-button",
+                                persistState.activeGridSystemId === gridSet.id && "active"
                               )}
                               onClick={() => activeGridSet(gridSet.id)}
                               disabled={persistState.activeGridSystemId === gridSet.id}
@@ -502,7 +498,7 @@ function GridSettingsPanel() {
                     </td>
                     <td colspan={2}>
                       <button
-                        class={css.addGridButton}
+                        class="add-grid-button"
                         onClick={createGridSet}
                         disabled={!gridContainerWidth() || !gridColumns() || !gutterWidth()}
                       >
@@ -516,11 +512,11 @@ function GridSettingsPanel() {
           </div>
         </div>
       </div>
-      <div class={css.panel__footer}>
-        <button class={css.panel__button} onClick={resetGridSettings}>
+      <div class="panel__footer">
+        <button class="panel__button" onClick={resetGridSettings}>
           Reset Grid Settings
         </button>
-        <button class={css.panel__button} onClick={() => setMemoryState("showGridSettingsPanel", false)}>
+        <button class="panel__button" onClick={() => setMemoryState("showGridSettingsPanel", false)}>
           Close
         </button>
       </div>
@@ -542,16 +538,16 @@ function DesignCard(props: Design & { selectDesign: (id: string) => void; delete
   });
 
   return (
-    <div class={clsx(css.designCard, persistState.designId === props.id && css.current)}>
+    <div class={clsx("design-card", persistState.designId === props.id && "current")}>
       <img
-        class={css.designCard__img}
+        class="design-card__img"
         src={imgUrl()}
         draggable={false}
         onClick={() => props.selectDesign(props.id)}
         alt=""
       />
       <button
-        class={css.designCard__button}
+        class="design-card__button"
         onClick={() => props.deleteDesign(props.id)}
         disabled={persistState.designId === props.id}
       >
@@ -632,17 +628,13 @@ function AllDesignsPanel() {
   };
 
   return (
-    <div class={css.panel}>
-      <div class={css.panel__contentWrapper}>
-        <div
-          class={clsx(css.panel__content, isReady() && css.show)}
-          onDrop={handleDesignsDrop}
-          onDragOver={handleDragOver}
-        >
-          <div class={css.allDesignsList}>
-            <label class={css.uploadButton}>
-              <IconUpload class={css.uploadButton__icon} />
-              <span class={css.uploadButton__text}>Upload</span>
+    <div class="panel">
+      <div class="panel__content-wrapper">
+        <div class={clsx("panel__content", isReady() && "show")} onDrop={handleDesignsDrop} onDragOver={handleDragOver}>
+          <div class="all-designs-list">
+            <label class="upload-button">
+              <IconUpload class="upload-button__icon" />
+              <span class="upload-button__text">Upload</span>
               <input type="file" accept="image/jpeg,image/png" multiple onChange={handleInputChange} />
             </label>
             {
@@ -653,13 +645,13 @@ function AllDesignsPanel() {
           </div>
         </div>
       </div>
-      <div class={css.panel__footer}>
+      <div class="panel__footer">
         <Show when={!!designArray().length}>
-          <button class={css.panel__button} onClick={deleteAllDesigns}>
+          <button class="panel__button" onClick={deleteAllDesigns}>
             Clear Designs
           </button>
         </Show>
-        <button class={css.panel__button} onClick={() => setMemoryState("showAllDesignsPanel", false)}>
+        <button class="panel__button" onClick={() => setMemoryState("showAllDesignsPanel", false)}>
           Close
         </button>
       </div>
@@ -790,7 +782,9 @@ function DesignOverlay() {
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (["INPUT", "SELECT"].includes((e.target as Element).tagName)) return;
+    if (e.composedPath().find((el) => el instanceof Element && ["INPUT", "SELECT"].includes(el.tagName))) {
+      return;
+    }
 
     if (e.key === "Control") {
       // Enable opacity control
@@ -871,11 +865,11 @@ function DesignOverlay() {
       alt=""
       src={memoryState.designUrl}
       class={clsx(
-        css.designOverlay,
-        memoryState.isSolidMode && css.solid,
-        memoryState.enableAnimation && css.animation,
-        persistState.lockDesignOverlay && !memoryState.isSolidMode && css.locked,
-        (!memoryState.designUrl || !persistState.showDesignOverlay) && css.hide
+        "design-overlay",
+        memoryState.isSolidMode && "solid",
+        memoryState.enableAnimation && "animation",
+        persistState.lockDesignOverlay && !memoryState.isSolidMode && "locked",
+        (!memoryState.designUrl || !persistState.showDesignOverlay) && "hide"
       )}
       style={overlayStyle()}
       onLoad={handleImageLoaded}
@@ -891,7 +885,7 @@ function DesignOverlay() {
 function VerticalRhythmOverlay() {
   return (
     <div
-      class={css.verticalRhythmOverlay}
+      class="vertical-rhythm-overlay"
       style={{
         "background-image": `linear-gradient(to bottom, ${persistState.verticalRhythmColor} ${persistState.verticalRhythmHeight}, transparent ${persistState.verticalRhythmHeight})`,
         "background-size": `100% ${persistState.verticalRhythmHeight.replace(/\d+/, (n) => String(+n * 2))}`
@@ -917,7 +911,7 @@ function GridSystemOverlay() {
 
   return (
     <Show when={!!gridSet()}>
-      <div class={clsx(css.gridSystemOverlay, css[gridSet()!.position])}>
+      <div class={clsx("grid-system-overlay", gridSet()!.position)}>
         <div
           style={{
             width: gridSet()!.width,
@@ -942,6 +936,10 @@ function GridSystemOverlay() {
 }
 
 function Toast() {
+  const closeToast = () => {
+    setMemoryState("errorMessage", undefined);
+  };
+
   onMount(() => {
     window.addEventListener("mousedown", closeToast);
 
@@ -950,17 +948,10 @@ function Toast() {
     });
   });
 
-  const closeToast = (e: MouseEvent) => {
-    const target = e.target as Element;
-    if (!target.closest("#_pixel-mirror-toast")) {
-      setMemoryState("errorMessage", undefined);
-    }
-  };
-
   return (
-    <div id="_pixel-mirror-toast" class={css.toast}>
+    <div id="toast" class="toast">
       <IconWarning />
-      <span class={css.toast__message}>{memoryState.errorMessage}</span>
+      <span class="toast__message">{memoryState.errorMessage}</span>
     </div>
   );
 }

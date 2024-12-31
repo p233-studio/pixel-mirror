@@ -9,11 +9,20 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   @return 8px * $n;
 }
 
-%button {
+%menu-button {
+  &:not(:disabled):hover {
+    background: rgba($black, 0.04);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button {
   padding: 0;
   margin: 0;
   font: inherit;
-  appearance: none;
   cursor: pointer;
   background: none;
   border: none;
@@ -28,24 +37,17 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-%menu-button {
-  &:not(:disabled):hover {
-    background: rgba($black, 0.04);
-  }
-}
-
-:global(:root) {
-  // Sets the `position` of the `:root` element to `relative`.
-  // This ensures overlays work correctly with minimal impact on the host project.
-  // Please verify compatibility with your project.
-  position: relative;
+svg {
+  display: block;
+  color: currentcolor;
+  fill: none;
 }
 
 .hide {
   display: none !important;
 }
 
-.app {
+.app-bar {
   position: fixed;
   right: rhythm(2);
   bottom: rhythm(5);
@@ -69,23 +71,13 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateZ(0);
   will-change: width, height;
 
-  &.noEvents {
+  &.no-events {
     pointer-events: none;
   }
 
   &.top {
     top: rhythm(6);
     bottom: auto;
-  }
-
-  svg {
-    display: block;
-    color: currentcolor;
-    fill: none;
-  }
-
-  * {
-    box-sizing: border-box;
   }
 }
 
@@ -118,15 +110,14 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.menuBar {
+.menu-bar {
   display: flex;
   align-items: center;
   padding: 0 rhythm(1.5);
   overflow-x: auto;
 }
 
-.menuButton {
-  @extend %button;
+.menu-button {
   @extend %menu-button;
   padding: rhythm(1);
 
@@ -135,7 +126,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.opacityButton {
+.opacity-button {
   position: relative;
 
   &__value {
@@ -151,7 +142,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.alignmentPopover {
+.alignment-popover {
   position: absolute;
   bottom: 100%;
   left: 80px;
@@ -169,8 +160,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: rhythm(1.5) rhythm(1.5) 0 0;
 }
 
-.alignmentButton {
-  @extend %button;
+.alignment-button {
   @extend %menu-button;
   padding: rhythm(0.5);
   border-radius: rhythm(1);
@@ -181,7 +171,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.scaleButton {
+.scale-button {
   position: relative;
 
   &__value {
@@ -223,7 +213,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   height: 100%;
   border-radius: inherit;
 
-  &__contentWrapper {
+  &__content-wrapper {
     height: 100%;
     padding: rhythm(1);
     overflow: hidden;
@@ -262,7 +252,6 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &__button {
-    @extend %button;
     width: 168px;
     font-size: 15px;
     line-height: rhythm(4);
@@ -272,7 +261,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.gridSettingBox {
+.grid-setting-box {
   padding-bottom: rhythm(3);
 
   &__header {
@@ -288,8 +277,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     line-height: rhythm(4);
   }
 
-  &__toggleButton {
-    @extend %button;
+  &__toggle-button {
     display: flex;
     gap: rhythm(0.5);
     align-items: center;
@@ -314,12 +302,12 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
       transform: none !important;
     }
 
-    :global(#_pixel-mirror-toggle-trigger) {
+    #toggle-trigger {
       transition: transform 0.25s $timing-function;
       transform: translateX(-8px);
     }
 
-    &.enabled :global(#_pixel-mirror-toggle-trigger) {
+    &.enabled #toggle-trigger {
       transform: translateX(0);
     }
   }
@@ -357,7 +345,6 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   > button {
-    @extend %button;
     padding-right: rhythm(1.5);
     padding-left: rhythm(1.5);
     font-size: 14px;
@@ -368,7 +355,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.tableWrapper {
+.table-wrapper {
   margin-top: rhythm(3);
   overflow: auto;
   border: 2px solid $black;
@@ -393,7 +380,6 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &__button {
-    @extend %button;
     border-radius: rhythm(1);
 
     > svg {
@@ -401,7 +387,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
       height: rhythm(2.5);
     }
 
-    &.activeGridButton {
+    &.active-grid-button {
       opacity: 0;
 
       &:focus,
@@ -425,7 +411,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
       border-bottom: 1px solid $gray;
 
       &:hover {
-        .activeGridButton {
+        .active-grid-button {
           opacity: 1;
         }
       }
@@ -486,8 +472,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.addGridButton {
-  @extend %button;
+.add-grid-button {
   height: rhythm(3);
   padding-right: rhythm(1.5);
   padding-left: rhythm(1.5);
@@ -506,13 +491,13 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.allDesignsList {
+.all-designs-list {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: rhythm(2.5);
 }
 
-.designCard {
+.design-card {
   position: relative;
   cursor: pointer;
 
@@ -526,7 +511,6 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &__button {
-    @extend %button;
     position: absolute;
     right: rhythm(1.5);
     bottom: rhythm(1.5);
@@ -576,7 +560,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.uploadButton {
+.upload-button {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -613,7 +597,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.overlayContainer {
+.overlay-container {
   position: absolute;
   inset: 0;
   z-index: $max-zIndex - 1;
@@ -622,7 +606,7 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
-.designOverlay {
+.design-overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -654,13 +638,13 @@ $timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-.verticalRhythmOverlay {
+.vertical-rhythm-overlay {
   position: absolute;
   inset: 0;
   z-index: 2;
 }
 
-.gridSystemOverlay {
+.grid-system-overlay {
   position: absolute;
   inset: 0;
   z-index: 3;

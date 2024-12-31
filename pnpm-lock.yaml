@@ -65,9 +65,6 @@ importers:
       vite:
         specifier: ^6.0.5
         version: 6.0.5(@types/node@22.10.2)(sass@1.83.0)(terser@5.37.0)(yaml@2.6.1)
-      vite-plugin-css-injected-by-js:
-        specifier: ^3.5.2
-        version: 3.5.2(vite@6.0.5(@types/node@22.10.2)(sass@1.83.0)(terser@5.37.0)(yaml@2.6.1))
       vite-plugin-solid:
         specifier: ^2.11.0
         version: 2.11.0(solid-js@1.9.3)(vite@6.0.5(@types/node@22.10.2)(sass@1.83.0)(terser@5.37.0)(yaml@2.6.1))
@@ -1958,11 +1955,6 @@ packages:
 
   validate-html-nesting@1.2.2:
     resolution: {integrity: sha512-hGdgQozCsQJMyfK5urgFcWEqsSSrK63Awe0t/IMR0bZ0QMtnuaiHzThW81guu3qx9abLi99NEuiaN6P9gVYsNg==}
-
-  vite-plugin-css-injected-by-js@3.5.2:
-    resolution: {integrity: sha512-2MpU/Y+SCZyWUB6ua3HbJCrgnF0KACAsmzOQt1UvRVJCGF6S8xdA3ZUhWcWdM9ivG4I5az8PnQmwwrkC2CAQrQ==}
-    peerDependencies:
-      vite: '>2.0.0-0'
 
   vite-plugin-solid-svg@0.8.1:
     resolution: {integrity: sha512-ROGC2ae1eYUCMd+zfJtsbUtuZwsb6DZS0+Sy5/ZXDokOunGi0Ez/cL7OPdsixN3I0/rNYd/3hilo3kpRMAS+IA==}
@@ -3899,10 +3891,6 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   validate-html-nesting@1.2.2: {}
-
-  vite-plugin-css-injected-by-js@3.5.2(vite@6.0.5(@types/node@22.10.2)(sass@1.83.0)(terser@5.37.0)(yaml@2.6.1)):
-    dependencies:
-      vite: 6.0.5(@types/node@22.10.2)(sass@1.83.0)(terser@5.37.0)(yaml@2.6.1)
 
   vite-plugin-solid-svg@0.8.1(solid-js@1.9.3)(vite@6.0.5(@types/node@22.10.2)(sass@1.83.0)(terser@5.37.0)(yaml@2.6.1)):
     dependencies:
