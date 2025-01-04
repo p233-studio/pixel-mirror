@@ -28,6 +28,8 @@
   "bugs": {
     "url": "https://github.com/p233-studio/pixel-mirror/issues"
   },
+  "license": "Apache-2.0",
+  "author": "Peiwen Lu",
   "devDependencies": {
     "clsx": "^2.1.1",
     "cssnano": "^7.0.6",
