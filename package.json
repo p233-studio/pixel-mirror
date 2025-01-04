@@ -1,6 +1,6 @@
 {
   "name": "pixel-mirror",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Pixel Mirror helps developers achieve pixel-perfect UIs by easily overlaying design mockups.",
   "type": "module",
   "scripts": {
