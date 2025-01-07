@@ -1,9 +1,9 @@
-export default function pixelMirrorPlugin() {
+export default function pixelMirror() {
   return {
-    name: "vite-plugin-pixel-mirror",
+    name: "pixel-mirror",
     transformIndexHtml(html) {
       if (process.env.NODE_ENV !== "production") {
-        return html.replace("</body>", `<script defer src="/node_modules/pixel-mirror/dist/index.js"></script></body>`);
+        return html.replace("</head>", `<script defer src="/node_modules/pixel-mirror/dist/index.js"></script></head>`);
       }
       return html;
     }

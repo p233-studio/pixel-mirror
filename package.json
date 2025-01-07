@@ -13,7 +13,8 @@
   },
   "exports": {
     ".": "./dist/index.js",
-    "./vite": "./plugins/vite.js"
+    "./vite": "./plugins/vite.js",
+    "./astro": "./plugins/astro.js"
   },
   "keywords": [
     "solid",
@@ -55,7 +56,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix --max-warnings 0 --no-warn-ignored"
+      "eslint --fix --max-warnings 0"
     ],
     "*.scss": [
       "stylelint --fix"
