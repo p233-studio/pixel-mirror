@@ -13,8 +13,14 @@
   },
   "exports": {
     ".": "./dist/index.js",
-    "./vite": "./plugins/vite.js",
-    "./astro": "./plugins/astro.js"
+    "./vite": {
+      "types": "./plugins/vite.d.ts",
+      "default": "./plugins/vite.js"
+    },
+    "./astro": {
+      "types": "./plugins/astro.d.ts",
+      "default": "./plugins/astro.js"
+    }
   },
   "keywords": [
     "solid",

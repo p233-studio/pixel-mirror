@@ -4,19 +4,17 @@ import solid from "eslint-plugin-solid/configs/typescript";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 
 export default tseslint.config(
-  { ignores: ["dist", "vite.config.ts"] },
+  { ignores: ["dist", "node_modules", ".git"] },
   {
-    files: ["**/*.{ts,tsx}"],
+    files: ["plugins/vite.js"],
     languageOptions: {
-      parserOptions: {
-        project: "tsconfig.json"
+      globals: {
+        process: "readonly"
       }
-    },
-    extends: [
-      eslint.configs.recommended,
-      ...tseslint.configs.recommendedTypeChecked,
-      solid,
-      eslintPluginPrettierRecommended
-    ]
-  }
+    }
+  },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
+  solid,
+  eslintPluginPrettierRecommended
 );
