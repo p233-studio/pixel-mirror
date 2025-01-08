@@ -6,7 +6,7 @@ Pixel Mirror is a lightweight tool for front-end developers that overlays design
 
 ## Installation
 
-### 1. For Vite projects
+### 1. For [Vite](https://vite.dev/) projects
 
 Install the package via npm:
 
@@ -17,20 +17,55 @@ npm install pixel-mirror --save-dev
 Then, add Pixel Mirror's Vite plugin to your `vite.config.js`:
 
 ```js
-import pixelMirrorPlugin from "pixel-mirror/vite";
 import { defineConfig } from "vite";
+import pixelMirror from "pixel-mirror/vite";
 
 export default defineConfig({
-  plugins: [pixelMirrorPlugin()],
+  plugins: [pixelMirror()],
   // ... other configurations
 });
 ```
 
 The plugin is automatically injected into your HTML during development and will be removed in production builds.
 
-### 2. For other projects
+### 2. For [Astro](https://astro.build/) projects
 
-If you're not using Vite, you can integrate Pixel Mirror by injecting its script file into your HTML, served via a CDN:
+Install the package via npm:
+
+```bash
+npm install pixel-mirror --save-dev
+```
+
+Then, add Pixel Mirror's Astro Integration to your `astro.config.mjs`:
+
+```js
+import { defineConfig } from "astro/config";
+import pixelMirror from "pixel-mirror/astro";
+
+export default defineConfig({
+  integrations: [pixelMirror()],
+  // ... other configurations
+});
+```
+
+### 3. For [Next.js](https://nextjs.org/) projects
+
+Inject the following code to the `<Head></Head>` section in `_document.jsx`:
+
+``` jsx
+// import Script from "next/script"
+
+{process.env.NODE_ENV === "development" && (
+  <Script
+    src="https://cdn.jsdelivr.net/npm/pixel-mirror/dist/index.js"
+    strategy="afterInteractive"
+  />
+)}
+```
+
+### 4. For other projects
+
+Integrate Pixel Mirror by injecting its script into your HTML:
 
 ``` html
 <script defer src="https://cdn.jsdelivr.net/npm/pixel-mirror/dist/index.js"></script>
