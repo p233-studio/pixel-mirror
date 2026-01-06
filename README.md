@@ -1,47 +1,83 @@
-# Svelte + TS + Vite
+# Pixel Mirror
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+![screenshot](./docs/app.png)
 
-## Recommended IDE Setup
+Pixel Mirror is a lightweight tool for front-end developers that overlays design mockups on web pages. With features like adjustable transparency, scaling, alignment, and grid guides, it helps developers achieve pixel-perfect accuracy when implementing UI designs.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+## Installation
 
-## Need an official Svelte framework?
+### 1. For [Vite](https://vite.dev/) projects
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+Install the package via npm:
 
-## Technical considerations
-
-**Why use this over SvelteKit?**
-
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+```bash
+npm install pixel-mirror --save-dev
 ```
+
+Then, add Pixel Mirror's Vite plugin to your `vite.config.js`:
+
+```js
+import { defineConfig } from "vite";
+import pixelMirror from "pixel-mirror/vite";
+
+export default defineConfig({
+  plugins: [pixelMirror()]
+  // ... other configurations
+});
+```
+
+The plugin is automatically injected into your HTML during development and will be removed in production builds.
+
+### 2. For [Astro](https://astro.build/) projects
+
+Install the package via npm:
+
+```bash
+npm install pixel-mirror --save-dev
+```
+
+Then, add Pixel Mirror's Astro Integration to your `astro.config.mjs`:
+
+```js
+import { defineConfig } from "astro/config";
+import pixelMirror from "pixel-mirror/astro";
+
+export default defineConfig({
+  integrations: [pixelMirror()]
+  // ... other configurations
+});
+```
+
+### 3. For [Next.js](https://nextjs.org/) projects
+
+Inject the following code to the `<Head></Head>` section in `_document.jsx`:
+
+```jsx
+// import Script from "next/script"
+
+{
+  process.env.NODE_ENV === "development" && (
+    <Script src="https://cdn.jsdelivr.net/npm/pixel-mirror/dist/index.js" strategy="afterInteractive" />
+  );
+}
+```
+
+### 4. For other projects
+
+Integrate Pixel Mirror by injecting its script into your HTML:
+
+```html
+<script defer src="https://cdn.jsdelivr.net/npm/pixel-mirror/dist/index.js"></script>
+```
+
+This allows you to use Pixel Mirror out of the box without additional setup. Remember to remove the script in the production environment.
+
+## Usage
+
+_Before using this tool, please note that it sets the `position` of the `:root` element to `relative`. This ensures overlays work correctly with minimal impact on the host project. Be sure to verify compatibility with your project before proceeding._
+
+For an interactive usage example, please refer to https://peiwen.lu/posts/pixel-mirror.
+
+## Credits
+
+Icons by https://hugeicons.com

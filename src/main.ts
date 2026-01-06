@@ -1,9 +1,12 @@
-import { mount } from 'svelte'
-import './app.css'
-import App from './App.svelte'
+import "./App.svelte";
 
-const app = mount(App, {
-  target: document.getElementById('app')!,
-})
+const tagName = "pixel-mirror";
 
-export default app
+if (!document.querySelector(tagName)) {
+  document.body.appendChild(document.createElement(tagName));
+}
+
+// Sets html element position to relative.
+// This is the minimal-cost solution for overlay positioning.
+// Most host projects should be unaffected by this change.
+document.documentElement.style.position = "relative";
