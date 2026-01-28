@@ -1,0 +1,85 @@
+// Z-index
+$max-z-index: 2147483647;
+
+// Animation
+$timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+$transition-fast: 0.2s;
+
+// Border
+$border-width-sm: 1px;
+$border-width-md: 2px;
+$outline-width: 3px;
+
+// Functions
+@function rhythm($n) {
+  @return 8px * $n;
+}
+
+// Mixins
+@mixin focus-ring($size: $outline-width) {
+  box-shadow: 0 0 0 $size var(--focus-ring);
+}
+
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}
+
+@mixin manager-container {
+  height: 100%;
+  overflow: hidden;
+  padding: 0 rhythm(0.5);
+}
+
+@mixin manager-inner {
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: rhythm(1.5) rhythm(2.5);
+}
+
+@mixin manager-footer {
+  position: absolute;
+  right: 0;
+  bottom: rhythm(-2.25);
+  left: 0;
+  z-index: 1;
+  display: flex;
+  gap: rhythm(2);
+  align-items: center;
+  width: max-content;
+  margin: auto;
+}
+
+@mixin btn-base {
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+  border-radius: rhythm(2);
+
+  &:hover:not(:disabled) {
+    background: var(--btn-hover-bg);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+@mixin manager-footer-button {
+  @include btn-base;
+  width: 168px;
+  font-size: 15px;
+  line-height: rhythm(4);
+}

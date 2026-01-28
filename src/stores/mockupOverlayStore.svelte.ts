@@ -1,0 +1,606 @@
+/**
+ * Mockup Overlay Store
+ *
+ * State Machine for Mockup Overlay:
+ *
+ * States:
+ * - visible:   Default state. Can drag, adjust opacity, scale, align
+ * - locked:    Frozen in place, no pointer events
+ * - dragging:  During drag operation, only drag-related events active
+ * - solid:     Full opacity, preparing for zoom (Space key held)
+ * - zoomed:    2x zoom with pan capability (Click in solid mode)
+ *
+ * Transitions:
+ * - visible → dragging:  Mouse down on overlay
+ * - dragging → visible:  Mouse up
+ * - visible → locked:    Escape key or toggle lock
+ * - locked → visible:    Escape key or toggle lock
+ * - visible → solid:     Space key down
+ * - locked → solid:      Space key down
+ * - solid → visible:     Space key up (if was visible)
+ * - solid → locked:      Space key up (if was locked)
+ * - solid → zoomed:      Mouse click
+ * - zoomed → solid:      Mouse click
+ * - zoomed → visible:    Space key up (if was visible)
+ * - zoomed → locked:     Space key up (if was locked)
+ *
+ * Event Availability by State:
+ * - visible:  drag, opacity, scale, align, move (arrow keys)
+ * - locked:   none (can only toggle lock or enter solid)
+ * - dragging: only drag movement
+ * - solid:    only zoom enter (click)
+ * - zoomed:   only zoom exit (click) or pan (mouse move)
+ */
+
+// Constants
+import { OPACITY_DEFAULT, OPACITY_MAX, OPACITY_MIN, OPACITY_STEP, SCALE_OPTIONS, ZOOM_FACTOR } from "~/constants";
+// Database
+import { getMockup, getSettingsByGroup, updateSetting } from "./database";
+// Stores
+import { toastStore } from "./toastStore.svelte";
+// Utils
+import { clamp, roundTo } from "./utils";
+
+export type MockupOverlayMode = "visible" | "locked" | "dragging" | "solid" | "zoomed";
+
+function createMockupOverlayStore() {
+  // Persisted state
+  let activeId = $state<string | null>(null);
+  let isHidden = $state(false);
+  let isLocked = $state(false);
+  let opacity = $state(OPACITY_DEFAULT);
+  let persistedPosition = $state<Position>({ x: 0, y: 0 });
+  let alignmentX = $state<MockupAlignmentX>("center");
+  let alignmentY = $state<MockupAlignmentY>("top");
+  let scale = $state(1);
+
+  // Runtime state
+  let mode = $state<MockupOverlayMode>("visible");
+  let activeMockupUrl = $state<string | null>(null);
+  let activeMockupMetadata = $state<Mockup | undefined>(undefined);
+  let mockupSize = $state<Size>({ width: 0, height: 0 });
+  let bufferedPosition = $state<Position>({ x: 0, y: 0 });
+  let isZoomPanning = $state(false);
+
+  // Track mode before entering solid/zoomed to restore correctly
+  let modeBeforeSolid = $state<"visible" | "locked">("visible");
+
+  // Initialization
+  let initialized = $state(false);
+  let initPromise: Promise<void> | null = null;
+
+  // Drag state (not reactive)
+  let dragStart = { x: 0, y: 0 };
+  let initialPosition = { x: 0, y: 0 };
+
+  // Zoom state (not reactive)
+  let zoomInitialPosition = { x: 0, y: 0 };
+  let zoomMouseStart = { x: 0, y: 0 };
+  let preZoomScale = 1;
+
+  // ============================================
+  // Internal helpers
+  // ============================================
+
+  async function loadMockup(id: string | null) {
+    if (!id) {
+      if (activeMockupUrl) URL.revokeObjectURL(activeMockupUrl);
+      activeMockupUrl = null;
+      activeMockupMetadata = undefined;
+      mockupSize = { width: 0, height: 0 };
+      return;
+    }
+
+    if (activeMockupMetadata?.id === id && activeMockupUrl) return;
+
+    try {
+      const mockup = await getMockup(id);
+
+      if (mockup) {
+        if (activeMockupUrl) URL.revokeObjectURL(activeMockupUrl);
+        const blob = new Blob([mockup.originalBuffer], { type: mockup.mimeType });
+        const newUrl = URL.createObjectURL(blob);
+        activeMockupUrl = newUrl;
+        activeMockupMetadata = mockup;
+
+        const img = new Image();
+        img.onload = () => {
+          mockupSize = { width: img.naturalWidth, height: img.naturalHeight };
+        };
+        img.onerror = () => {
+          toastStore.showError(new Error(`Failed to load mockup image.`));
+          mockupSize = { width: 0, height: 0 };
+        };
+        img.src = newUrl;
+      } else {
+        toastStore.showError(new Error(`Mockup not found.`));
+        activeMockupUrl = null;
+        activeMockupMetadata = undefined;
+        mockupSize = { width: 0, height: 0 };
+      }
+    } catch (e) {
+      toastStore.showError(e, "Failed to load mockup");
+      activeMockupUrl = null;
+      activeMockupMetadata = undefined;
+      mockupSize = { width: 0, height: 0 };
+    }
+  }
+
+  function updateAlignedPosition() {
+    if (alignmentX === null && alignmentY === null) return;
+
+    const { clientWidth, scrollHeight } = document.documentElement;
+    const scaledWidth = mockupSize.width * scale;
+    const scaledHeight = mockupSize.height * scale;
+
+    let newX = bufferedPosition.x;
+    let newY = bufferedPosition.y;
+
+    if (alignmentX !== null) {
+      switch (alignmentX) {
+        case "left":
+          newX = 0;
+          break;
+        case "center":
+          newX = ((clientWidth - scaledWidth) / 2) | 0;
+          break;
+        case "right":
+          newX = clientWidth - scaledWidth;
+          break;
+      }
+    }
+
+    if (alignmentY !== null) {
+      switch (alignmentY) {
+        case "top":
+          newY = 0;
+          break;
+        case "bottom":
+          newY = scrollHeight - scaledHeight;
+          break;
+      }
+    }
+
+    if (newX !== bufferedPosition.x || newY !== bufferedPosition.y) {
+      bufferedPosition = { x: newX, y: newY };
+      persistedPosition = { x: newX, y: newY };
+      updateSetting("mockupOverlay", "position", { ...persistedPosition }).catch(toastStore.showError);
+    }
+  }
+
+  function clearAlignmentInternal() {
+    if (alignmentX !== null || alignmentY !== null) {
+      alignmentX = null;
+      alignmentY = null;
+      Promise.all([
+        updateSetting("mockupOverlay", "alignmentX", null),
+        updateSetting("mockupOverlay", "alignmentY", null)
+      ]).catch(toastStore.showError);
+    }
+  }
+
+  // ============================================
+  // Event handlers
+  // ============================================
+
+  function handleGlobalMouseMove(e: MouseEvent) {
+    if (mode !== "dragging") return;
+
+    const dx = e.clientX - dragStart.x;
+    const dy = e.clientY - dragStart.y;
+
+    bufferedPosition = {
+      x: initialPosition.x + dx,
+      y: initialPosition.y + dy
+    };
+  }
+
+  function handleGlobalMouseUp() {
+    if (mode !== "dragging") return;
+
+    window.removeEventListener("mousemove", handleGlobalMouseMove);
+    window.removeEventListener("mouseup", handleGlobalMouseUp);
+
+    mode = "visible";
+    clearAlignmentInternal();
+
+    persistedPosition = { ...bufferedPosition };
+    updateSetting("mockupOverlay", "position", { ...persistedPosition }).catch(toastStore.showError);
+  }
+
+  function handleZoomModeMove(e: MouseEvent) {
+    if (mode !== "zoomed") return;
+
+    if (!isZoomPanning) {
+      isZoomPanning = true;
+    }
+
+    const dx = e.clientX - zoomMouseStart.x;
+    const dy = e.clientY - zoomMouseStart.y;
+
+    bufferedPosition = {
+      x: zoomInitialPosition.x - dx,
+      y: zoomInitialPosition.y - dy
+    };
+  }
+
+  // ============================================
+  // Public API
+  // ============================================
+
+  return {
+    // Getters
+    get initialized() {
+      return initialized;
+    },
+    get activeMockupId() {
+      return activeId;
+    },
+    get activeMockupUrl() {
+      return activeMockupUrl;
+    },
+    get mockupSize() {
+      return mockupSize;
+    },
+    get isHidden() {
+      return isHidden;
+    },
+    get isLocked() {
+      return isLocked;
+    },
+    get opacity() {
+      return opacity;
+    },
+    get position() {
+      return bufferedPosition;
+    },
+    get alignmentX() {
+      return alignmentX;
+    },
+    get alignmentY() {
+      return alignmentY;
+    },
+    get isAligned() {
+      return alignmentX !== null || alignmentY !== null;
+    },
+    get scale() {
+      return scale;
+    },
+    get mode() {
+      return mode;
+    },
+    get isZoomPanning() {
+      return isZoomPanning;
+    },
+    get isDragging() {
+      return mode === "dragging";
+    },
+    get isSolidOrZoomed() {
+      return mode === "solid" || mode === "zoomed";
+    },
+    get isVisibleOrLocked() {
+      return mode === "visible" || mode === "locked";
+    },
+    get effectiveOpacity() {
+      return mode === "solid" || mode === "zoomed" ? 1 : opacity;
+    },
+    get positionDisplay() {
+      if (alignmentX === null && alignmentY === null) {
+        return `x:${Math.round(bufferedPosition.x)}, y:${Math.round(bufferedPosition.y)}`;
+      }
+      const parts: string[] = [];
+      if (alignmentY) parts.push(alignmentY);
+      if (alignmentX) parts.push(alignmentX);
+      return parts.join("-");
+    },
+
+    // ============================================
+    // Initialization
+    // ============================================
+
+    init: async () => {
+      if (initialized || initPromise) return initPromise;
+
+      initPromise = (async () => {
+        try {
+          const settings = await getSettingsByGroup("mockupOverlay");
+
+          if (settings.activeMockupId !== undefined) activeId = settings.activeMockupId;
+          if (settings.isHidden !== undefined) isHidden = settings.isHidden;
+          if (settings.isLocked !== undefined) isLocked = settings.isLocked;
+          if (settings.opacity !== undefined) opacity = settings.opacity;
+          if (settings.position !== undefined) {
+            persistedPosition = settings.position;
+            bufferedPosition = { ...settings.position };
+          }
+          if (settings.alignmentX !== undefined) alignmentX = settings.alignmentX;
+          if (settings.alignmentY !== undefined) alignmentY = settings.alignmentY;
+          if (settings.scale !== undefined) scale = settings.scale;
+
+          await loadMockup(activeId);
+          mode = isLocked ? "locked" : "visible";
+          modeBeforeSolid = mode;
+        } catch (e) {
+          toastStore.showError(e, "Failed to load mockup overlay settings");
+        } finally {
+          initialized = true;
+          initPromise = null;
+        }
+      })();
+
+      return initPromise;
+    },
+
+    // ============================================
+    // Mockup management
+    // ============================================
+
+    setActiveMockup: (id: string | null) => {
+      activeId = id;
+      loadMockup(id);
+
+      const updates: Promise<void>[] = [updateSetting("mockupOverlay", "activeMockupId", id)];
+
+      if (id) {
+        if (isHidden) {
+          isHidden = false;
+          updates.push(updateSetting("mockupOverlay", "isHidden", false));
+        }
+        if (isLocked) {
+          isLocked = false;
+          mode = "visible";
+          modeBeforeSolid = "visible";
+          updates.push(updateSetting("mockupOverlay", "isLocked", false));
+        }
+      }
+
+      Promise.all(updates).catch(toastStore.showError);
+    },
+
+    // ============================================
+    // Visibility & Lock (only in visible/locked mode)
+    // ============================================
+    // Settings use fire-and-forget pattern: local state updates immediately,
+    // persistence failure only shows error (recoverable on next session)
+
+    toggleVisibility: () => {
+      // Can toggle visibility from any mode, but will exit solid/zoomed first
+      if (mode === "solid" || mode === "zoomed") {
+        window.removeEventListener("mousemove", handleZoomModeMove);
+        scale = preZoomScale || scale;
+        bufferedPosition = { ...persistedPosition };
+        isZoomPanning = false;
+        mode = isLocked ? "locked" : "visible";
+      }
+
+      isHidden = !isHidden;
+      updateSetting("mockupOverlay", "isHidden", isHidden).catch(toastStore.showError);
+    },
+
+    toggleLock: () => {
+      // Can only toggle lock in visible or locked mode
+      if (mode !== "visible" && mode !== "locked") return;
+
+      isLocked = !isLocked;
+      mode = isLocked ? "locked" : "visible";
+      modeBeforeSolid = mode;
+      updateSetting("mockupOverlay", "isLocked", isLocked).catch(toastStore.showError);
+    },
+
+    // ============================================
+    // Opacity (in visible or locked mode)
+    // ============================================
+
+    adjustOpacity: (direction: number) => {
+      if (mode !== "visible" && mode !== "locked") return;
+
+      const delta = direction > 0 ? -OPACITY_STEP : OPACITY_STEP;
+      const newOpacity = roundTo(opacity + delta, 2);
+      opacity = clamp(newOpacity, OPACITY_MIN, OPACITY_MAX);
+      updateSetting("mockupOverlay", "opacity", opacity).catch(toastStore.showError);
+    },
+
+    resetOpacity: () => {
+      if (mode !== "visible" && mode !== "locked") return;
+
+      opacity = OPACITY_DEFAULT;
+      updateSetting("mockupOverlay", "opacity", opacity).catch(toastStore.showError);
+    },
+
+    // ============================================
+    // Scale (only in visible mode)
+    // ============================================
+
+    cycleScale: () => {
+      if (mode !== "visible") return;
+
+      const oldScale = scale;
+      const currentIndex = SCALE_OPTIONS.indexOf(oldScale as (typeof SCALE_OPTIONS)[number]);
+      const nextIndex = (currentIndex + 1) % SCALE_OPTIONS.length;
+      const newScale = SCALE_OPTIONS[nextIndex >= 0 ? nextIndex : 0];
+
+      const { clientWidth, clientHeight } = document.documentElement;
+      const centerX = window.scrollX + clientWidth / 2;
+      const centerY = window.scrollY + clientHeight / 2;
+
+      const { x, y } = bufferedPosition;
+
+      const newX = centerX - ((centerX - x) / oldScale) * newScale;
+      const newY = centerY - ((centerY - y) / oldScale) * newScale;
+
+      scale = newScale;
+      bufferedPosition = { x: newX, y: newY };
+      persistedPosition = { x: newX, y: newY };
+
+      clearAlignmentInternal();
+      Promise.all([
+        updateSetting("mockupOverlay", "scale", scale),
+        updateSetting("mockupOverlay", "position", { ...persistedPosition })
+      ]).catch(toastStore.showError);
+    },
+
+    // ============================================
+    // Alignment (only in visible mode)
+    // ============================================
+
+    setAlignmentX: (value: MockupAlignmentX) => {
+      if (mode !== "visible") return;
+
+      alignmentX = value;
+      updateSetting("mockupOverlay", "alignmentX", value).catch(toastStore.showError);
+      updateAlignedPosition();
+    },
+
+    setAlignmentY: (value: MockupAlignmentY) => {
+      if (mode !== "visible") return;
+
+      alignmentY = value;
+      updateSetting("mockupOverlay", "alignmentY", value).catch(toastStore.showError);
+      updateAlignedPosition();
+    },
+
+    setAlignment: (y: MockupAlignmentY, x: MockupAlignmentX) => {
+      if (mode !== "visible") return;
+
+      alignmentY = y;
+      alignmentX = x;
+      Promise.all([
+        updateSetting("mockupOverlay", "alignmentY", y),
+        updateSetting("mockupOverlay", "alignmentX", x)
+      ]).catch(toastStore.showError);
+      updateAlignedPosition();
+    },
+
+    clearAlignment: () => {
+      if (mode !== "visible") return;
+      clearAlignmentInternal();
+    },
+
+    updateAlignedPosition,
+
+    // ============================================
+    // Movement (only in visible mode)
+    // ============================================
+
+    move: (dx: number, dy: number) => {
+      if (mode !== "visible") return;
+
+      clearAlignmentInternal();
+
+      bufferedPosition = {
+        x: bufferedPosition.x + dx,
+        y: bufferedPosition.y + dy
+      };
+    },
+
+    persistPosition: () => {
+      persistedPosition = { ...bufferedPosition };
+      updateSetting("mockupOverlay", "position", { ...persistedPosition }).catch(toastStore.showError);
+    },
+
+    // ============================================
+    // Drag (only from visible mode)
+    // ============================================
+
+    startDrag: (e: MouseEvent) => {
+      if (mode !== "visible") return;
+
+      mode = "dragging";
+      dragStart = { x: e.clientX, y: e.clientY };
+      initialPosition = { ...bufferedPosition };
+
+      window.addEventListener("mousemove", handleGlobalMouseMove);
+      window.addEventListener("mouseup", handleGlobalMouseUp);
+    },
+
+    // ============================================
+    // Solid Mode (from visible or locked)
+    // ============================================
+
+    enterSolidMode: () => {
+      if (mode !== "visible" && mode !== "locked") return;
+
+      modeBeforeSolid = mode;
+      mode = "solid";
+    },
+
+    exitSolidMode: () => {
+      // If in zoomed mode, clean up zoom first
+      if (mode === "zoomed") {
+        window.removeEventListener("mousemove", handleZoomModeMove);
+        scale = preZoomScale;
+        bufferedPosition = { ...persistedPosition };
+        isZoomPanning = false;
+      }
+
+      if (mode === "solid" || mode === "zoomed") {
+        mode = modeBeforeSolid;
+      }
+    },
+
+    // ============================================
+    // Zoom Mode (only from solid mode)
+    // ============================================
+
+    enterZoomMode: (e: MouseEvent) => {
+      if (mode !== "solid") return;
+
+      mode = "zoomed";
+      preZoomScale = scale;
+      const zoomScale = scale * ZOOM_FACTOR;
+      scale = zoomScale;
+
+      const { clientX, clientY } = e;
+      const { x, y } = bufferedPosition;
+
+      const pageX = clientX + window.scrollX;
+      const pageY = clientY + window.scrollY;
+
+      // Calculate point on mockup that was clicked
+      const mockupPointX = (pageX - x) / preZoomScale;
+      const mockupPointY = (pageY - y) / preZoomScale;
+
+      // Calculate screen center
+      const { clientWidth, clientHeight } = document.documentElement;
+      const centerX = window.scrollX + clientWidth / 2;
+      const centerY = window.scrollY + clientHeight / 2;
+
+      // Position mockup so clicked point is at screen center
+      zoomInitialPosition = {
+        x: centerX - mockupPointX * zoomScale,
+        y: centerY - mockupPointY * zoomScale
+      };
+      zoomMouseStart = { x: clientX, y: clientY };
+
+      bufferedPosition = { ...zoomInitialPosition };
+
+      window.addEventListener("mousemove", handleZoomModeMove);
+    },
+
+    exitZoomMode: () => {
+      if (mode !== "zoomed") return;
+
+      window.removeEventListener("mousemove", handleZoomModeMove);
+      mode = "solid";
+      scale = preZoomScale;
+      bufferedPosition = { ...persistedPosition };
+      isZoomPanning = false;
+    },
+
+    // ============================================
+    // Cleanup
+    // ============================================
+
+    cleanup: () => {
+      window.removeEventListener("mousemove", handleGlobalMouseMove);
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
+      window.removeEventListener("mousemove", handleZoomModeMove);
+
+      if (activeMockupUrl) {
+        URL.revokeObjectURL(activeMockupUrl);
+      }
+    }
+  };
+}
+
+export const mockupOverlayStore = createMockupOverlayStore();

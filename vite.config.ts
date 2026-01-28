@@ -1,14 +1,37 @@
-import { defineConfig } from "vite";
-import cssnano from "cssnano";
+import svelteSvg from "@poppanator/sveltekit-svg";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import cssnano from "cssnano";
+import path from "path";
+import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
   server: {
     port: 3000
   },
-  plugins: [svelte()],
+  plugins: [
+    svelte(),
+    svelteSvg({
+      svgoOptions: {
+        plugins: [
+          {
+            name: "preset-default",
+            params: {
+              overrides: {
+                cleanupIds: false
+              }
+            }
+          }
+        ]
+      }
+    })
+  ],
   css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@use "~/styles/shared.scss" as *;`
+      }
+    },
     postcss: {
       plugins: [
         cssnano({
@@ -22,6 +45,9 @@ export default defineConfig({
         })
       ]
     }
+  },
+  resolve: {
+    alias: [{ find: "~", replacement: path.resolve("src") }]
   },
   build: {
     lib: {

@@ -1,4 +1,17 @@
-type MockupAlignment = "center" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+// ============================================
+// Mode & Theme Types (as const for stricter typing)
+// ============================================
+
+type DockMode = "toolbar" | "mockups" | "grids";
+type DockPosition = "top" | "bottom";
+type Theme = "light" | "dark";
+type MockupAlignmentX = "left" | "center" | "right" | null;
+type MockupAlignmentY = "top" | "bottom" | null;
+type LayoutGridPosition = "left" | "right" | "center";
+
+// ============================================
+// Geometry Types
+// ============================================
 
 interface Position {
   x: number;
@@ -10,6 +23,10 @@ interface Size {
   height: number;
 }
 
+// ============================================
+// Entity Types
+// ============================================
+
 interface Mockup {
   id: string;
   originalBuffer: ArrayBuffer;
@@ -19,43 +36,57 @@ interface Mockup {
   createdAt: number;
 }
 
-interface GridConfig {
+interface LayoutGridConfig {
   id: string;
-  width: string; // e.g. "1140px" or "100%"
+  width: string; // CSS length (e.g., "1140px", "100%")
   columns: number;
-  gutterWidth: string;
+  gutterWidth: string; // CSS length
   isGutterOnOutside: boolean;
-  position: GridPosition;
+  position: LayoutGridPosition;
   createdAt: number;
 }
 
-// Settings Type Definitions
+// ============================================
+// Settings Types
+// ============================================
 
-interface MenubarSettings {
-  position: "top" | "bottom";
+interface DockSettings {
+  position: DockPosition;
+  theme: Theme;
 }
 
 interface MockupOverlaySettings {
+  activeMockupId: string | null;
   size: Size;
   isHidden: boolean;
   isLocked: boolean;
   opacity: number;
   position: Position;
-  alignment: MockupAlignment;
+  alignmentX: MockupAlignmentX;
+  alignmentY: MockupAlignmentY;
+  scale: number;
 }
 
 interface GridOverlaySettings {
+  activeLayoutGridId: string;
   showLayoutGrid: boolean;
   layoutGridColor: string;
-  showVerticalRhythms: boolean;
-  verticalRhythmsColor: string;
-  verticalRhythmHeight: string;
+  showSpacingGrid: boolean;
+  spacingGridColor: string;
+  spacingGridHeight: string;
 }
 
 interface AppSettings {
-  menubar: MenubarSettings;
-  "mockup-overlay": MockupOverlaySettings;
-  "grid-overlay": GridOverlaySettings;
+  dock: DockSettings;
+  mockupOverlay: MockupOverlaySettings;
+  gridOverlay: GridOverlaySettings;
 }
 
 type SettingGroup = keyof AppSettings;
+
+// ============================================
+// Input Types (for creating new entities)
+// ============================================
+
+type MockupInput = Omit<Mockup, "id" | "createdAt">;
+type GridInput = Omit<LayoutGridConfig, "id" | "createdAt">;

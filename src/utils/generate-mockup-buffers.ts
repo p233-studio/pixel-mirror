@@ -1,8 +1,17 @@
-import { THUMBNAIL_HEIGHT } from "../constants";
+/**
+ * Mockup Buffer Generation
+ *
+ * Handles image file processing for mockups:
+ * - Validates file type and size
+ * - Generates square thumbnails for preview
+ * - Extracts original buffer for overlay display
+ */
 
-type MockupData = Omit<Mockup, "id" | "createdAt">;
+import { MOCKUP_THUMBNAIL_SIZE } from "~/constants";
+import { FileError } from "./errors";
+import { validateFiles } from "./validation";
 
-async function processFile(file: File): Promise<MockupData> {
+async function processFile(file: File): Promise<MockupInput> {
   const originalBuffer = await file.arrayBuffer();
 
   const thumbnailBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
@@ -10,22 +19,23 @@ async function processFile(file: File): Promise<MockupData> {
     const objectUrl = URL.createObjectURL(file);
 
     img.onload = () => {
-      const scale = THUMBNAIL_HEIGHT / img.height;
-      const width = img.width * scale;
-      const height = THUMBNAIL_HEIGHT;
+      // Create square crop from center
+      const size = Math.min(img.width, img.height);
+      const sx = (img.width - size) / 2;
+      const sy = (img.height - size) / 2;
 
       const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = MOCKUP_THUMBNAIL_SIZE;
+      canvas.height = MOCKUP_THUMBNAIL_SIZE;
 
       const ctx = canvas.getContext("2d");
       if (!ctx) {
         URL.revokeObjectURL(objectUrl);
-        reject(new Error("Failed to get canvas context"));
+        reject(new FileError("Failed to get canvas context"));
         return;
       }
 
-      ctx.drawImage(img, 0, 0, width, height);
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, MOCKUP_THUMBNAIL_SIZE, MOCKUP_THUMBNAIL_SIZE);
 
       canvas.toBlob(
         async (blob) => {
@@ -33,7 +43,7 @@ async function processFile(file: File): Promise<MockupData> {
           if (blob) {
             resolve(await blob.arrayBuffer());
           } else {
-            reject(new Error("Failed to create thumbnail blob"));
+            reject(new FileError("Failed to create thumbnail"));
           }
         },
         file.type,
@@ -43,7 +53,7 @@ async function processFile(file: File): Promise<MockupData> {
 
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error("Failed to load image"));
+      reject(new FileError(`Failed to load image: ${file.name}`));
     };
 
     img.src = objectUrl;
@@ -57,9 +67,43 @@ async function processFile(file: File): Promise<MockupData> {
   };
 }
 
-export async function generateMockupBuffers(input: File | File[]): Promise<MockupData | MockupData[]> {
-  if (Array.isArray(input)) {
-    return Promise.all(input.map(processFile));
+export interface GenerateMockupBuffersResult {
+  data: MockupInput[];
+  errors: FileError[];
+}
+
+/**
+ * Generate mockup buffers from files with validation
+ *
+ * @param files - Array of files to process
+ * @returns Object with successful data and any validation/processing errors
+ */
+export async function generateMockupBuffers(files: File[]): Promise<GenerateMockupBuffersResult> {
+  // Validate files first
+  const { validFiles, errors } = validateFiles(files);
+
+  if (validFiles.length === 0) {
+    return { data: [], errors };
   }
-  return processFile(input);
+
+  // Process valid files
+  const results = await Promise.allSettled(validFiles.map(processFile));
+
+  const data: MockupInput[] = [];
+  const processingErrors: FileError[] = [...errors];
+
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      data.push(result.value);
+    } else {
+      const file = validFiles[index];
+      const error =
+        result.reason instanceof FileError
+          ? result.reason
+          : new FileError(`Failed to process ${file.name}`, String(result.reason));
+      processingErrors.push(error);
+    }
+  });
+
+  return { data, errors: processingErrors };
 }
