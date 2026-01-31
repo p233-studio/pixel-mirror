@@ -107,6 +107,7 @@
     <div class="toolbar">
       <button
         class="icon-button"
+        data-testid="btn-visibility"
         disabled={isMockupDisabled}
         onclick={mockupOverlayStore.toggleVisibility}
         title={isHidden ? "Show mockup" : "Hide mockup"}
@@ -119,6 +120,7 @@
       </button>
       <button
         class="icon-button"
+        data-testid="btn-lock"
         disabled={isControlsDisabled}
         onclick={() => mockupOverlayStore.toggleLock()}
         title={isLocked ? "Unlock mockup position" : "Lock mockup position"}
@@ -131,6 +133,7 @@
       </button>
       <button
         class="icon-button opacity-button"
+        data-testid="btn-opacity"
         disabled={isControlsDisabled}
         onclick={mockupOverlayStore.resetOpacity}
         title="Opacity (Click to reset, Ctrl+Scroll to adjust)"
@@ -140,6 +143,7 @@
       </button>
       <button
         class="icon-button alignment-trigger-btn"
+        data-testid="btn-alignment"
         disabled={isControlsDisabled || isLocked}
         onmouseenter={handleAlignmentMouseEnter}
         onmouseleave={handleAlignmentMouseLeave}
@@ -150,6 +154,7 @@
       </button>
       <button
         class="icon-button scale-button"
+        data-testid="btn-scale"
         disabled={isControlsDisabled || isLocked}
         onclick={mockupOverlayStore.cycleScale}
         title="Scale (1x ↔ 0.5x)"
@@ -157,13 +162,18 @@
         <IconScale />
         <span class="scale-button__value">{scaleDisplay}</span>
       </button>
-      <button class="icon-button" onclick={dockStore.enterMockups} title="Mockup Manager">
+      <button
+        class="icon-button"
+        data-testid="btn-mockup-manager"
+        onclick={dockStore.enterMockups}
+        title="Mockup Manager"
+      >
         <IconMockupManager />
       </button>
-      <button class="icon-button" onclick={dockStore.enterGrids} title="Grid Manager">
+      <button class="icon-button" data-testid="btn-grid-manager" onclick={dockStore.enterGrids} title="Grid Manager">
         <IconGridManager />
       </button>
-      <button class="icon-button" onclick={dockStore.toggleTheme} title="Toggle theme">
+      <button class="icon-button" data-testid="btn-theme" onclick={dockStore.toggleTheme} title="Toggle theme">
         {#if dockStore.theme === "dark"}
           <IconSun />
         {:else}
@@ -173,6 +183,7 @@
       <button
         class="icon-button"
         class:flip={dockStore.position === "top"}
+        data-testid="btn-position"
         onclick={dockStore.togglePosition}
         title="Toggle dock position"
       >

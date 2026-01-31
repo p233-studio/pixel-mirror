@@ -148,7 +148,7 @@ export async function getAllGrids(): Promise<LayoutGridConfig[]> {
 export async function getGrid(id: string): Promise<LayoutGridConfig | undefined> {
   try {
     const db = await getDB();
-    return db.get("grids", id);
+    return await db.get("grids", id);
   } catch (error) {
     throw new DatabaseError("Failed to get grid", error);
   }

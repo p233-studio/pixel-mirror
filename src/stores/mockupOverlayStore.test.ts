@@ -1,0 +1,722 @@
+/**
+ * MockupOverlayStore State Machine Tests
+ *
+ * Tests the 5 states and their transitions:
+ * - visible: Default state, can drag, adjust opacity, scale, align
+ * - locked: Frozen, no pointer events
+ * - dragging: During drag operation
+ * - solid: Full opacity, preparing for zoom (Space key held)
+ * - zoomed: 2x zoom with pan capability
+ */
+
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Mock the database module
+vi.mock("./database", () => ({
+  getMockup: vi.fn().mockResolvedValue(undefined),
+  getSettingsByGroup: vi.fn().mockResolvedValue({}),
+  updateSetting: vi.fn().mockResolvedValue(undefined)
+}));
+
+// Mock toastStore
+vi.mock("./toastStore.svelte", () => ({
+  toastStore: {
+    showError: vi.fn(),
+    clear: vi.fn(),
+    errorMessage: undefined
+  }
+}));
+
+describe("mockupOverlayStore", () => {
+  let mockupOverlayStore: typeof import("./mockupOverlayStore.svelte").mockupOverlayStore;
+  let getMockup: ReturnType<typeof vi.fn>;
+  let getSettingsByGroup: ReturnType<typeof vi.fn>;
+  let updateSetting: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    vi.resetModules();
+
+    // Mock URL.createObjectURL and URL.revokeObjectURL while preserving URL constructor
+    const OriginalURL = globalThis.URL;
+    vi.spyOn(OriginalURL, "createObjectURL").mockReturnValue("blob:mock-url");
+    vi.spyOn(OriginalURL, "revokeObjectURL").mockImplementation(() => {});
+
+    // Get fresh mocks
+    const dbModule = await import("./database");
+    getMockup = dbModule.getMockup as ReturnType<typeof vi.fn>;
+    getSettingsByGroup = dbModule.getSettingsByGroup as ReturnType<typeof vi.fn>;
+    updateSetting = dbModule.updateSetting as ReturnType<typeof vi.fn>;
+
+    // Reset mocks
+    getMockup.mockReset().mockResolvedValue(undefined);
+    getSettingsByGroup.mockReset().mockResolvedValue({});
+    updateSetting.mockReset().mockResolvedValue(undefined);
+
+    // Import fresh store
+    const module = await import("./mockupOverlayStore.svelte");
+    mockupOverlayStore = module.mockupOverlayStore;
+  });
+
+  afterEach(() => {
+    if (mockupOverlayStore) {
+      mockupOverlayStore.cleanup();
+    }
+  });
+
+  describe("initial state", () => {
+    it("starts uninitialized", () => {
+      expect(mockupOverlayStore.initialized).toBe(false);
+    });
+
+    it("has default values before init", () => {
+      expect(mockupOverlayStore.activeMockupId).toBeNull();
+      expect(mockupOverlayStore.isHidden).toBe(false);
+      expect(mockupOverlayStore.isLocked).toBe(false);
+      expect(mockupOverlayStore.opacity).toBe(0.5);
+      expect(mockupOverlayStore.scale).toBe(1);
+      expect(mockupOverlayStore.mode).toBe("visible");
+    });
+  });
+
+  describe("init", () => {
+    it("loads settings from database", async () => {
+      getSettingsByGroup.mockResolvedValue({
+        activeMockupId: "test-id",
+        isHidden: true,
+        isLocked: true,
+        opacity: 0.7,
+        scale: 0.5,
+        position: { x: 100, y: 200 },
+        alignmentX: "center",
+        alignmentY: "top"
+      });
+
+      await mockupOverlayStore.init();
+
+      expect(mockupOverlayStore.initialized).toBe(true);
+      expect(mockupOverlayStore.activeMockupId).toBe("test-id");
+      expect(mockupOverlayStore.isHidden).toBe(true);
+      expect(mockupOverlayStore.isLocked).toBe(true);
+      expect(mockupOverlayStore.opacity).toBe(0.7);
+      expect(mockupOverlayStore.scale).toBe(0.5);
+      expect(mockupOverlayStore.alignmentX).toBe("center");
+      expect(mockupOverlayStore.alignmentY).toBe("top");
+    });
+
+    it("sets mode to locked if isLocked is true", async () => {
+      getSettingsByGroup.mockResolvedValue({ isLocked: true });
+
+      await mockupOverlayStore.init();
+
+      expect(mockupOverlayStore.mode).toBe("locked");
+    });
+
+    it("only initializes once", async () => {
+      await mockupOverlayStore.init();
+      await mockupOverlayStore.init();
+
+      expect(getSettingsByGroup).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("state machine transitions", () => {
+    beforeEach(async () => {
+      await mockupOverlayStore.init();
+    });
+
+    describe("visible state", () => {
+      it("starts in visible mode", () => {
+        expect(mockupOverlayStore.mode).toBe("visible");
+      });
+
+      it("can toggle lock (visible → locked)", () => {
+        mockupOverlayStore.toggleLock();
+
+        expect(mockupOverlayStore.mode).toBe("locked");
+        expect(mockupOverlayStore.isLocked).toBe(true);
+      });
+
+      it("can enter solid mode (visible → solid)", () => {
+        mockupOverlayStore.enterSolidMode();
+
+        expect(mockupOverlayStore.mode).toBe("solid");
+      });
+
+      it("can start drag (visible → dragging)", () => {
+        const mockEvent = { clientX: 100, clientY: 100 } as MouseEvent;
+        mockupOverlayStore.startDrag(mockEvent);
+
+        expect(mockupOverlayStore.mode).toBe("dragging");
+        expect(mockupOverlayStore.isDragging).toBe(true);
+      });
+    });
+
+    describe("locked state", () => {
+      beforeEach(() => {
+        mockupOverlayStore.toggleLock();
+        expect(mockupOverlayStore.mode).toBe("locked");
+      });
+
+      it("can toggle lock back to visible (locked → visible)", () => {
+        mockupOverlayStore.toggleLock();
+
+        expect(mockupOverlayStore.mode).toBe("visible");
+        expect(mockupOverlayStore.isLocked).toBe(false);
+      });
+
+      it("can enter solid mode (locked → solid)", () => {
+        mockupOverlayStore.enterSolidMode();
+
+        expect(mockupOverlayStore.mode).toBe("solid");
+      });
+
+      it("cannot start drag", () => {
+        const mockEvent = { clientX: 100, clientY: 100 } as MouseEvent;
+        mockupOverlayStore.startDrag(mockEvent);
+
+        expect(mockupOverlayStore.mode).toBe("locked");
+      });
+
+      it("allows opacity adjustment in locked mode", () => {
+        // Locked mode still allows opacity adjustments (per state machine design)
+        const initialOpacity = mockupOverlayStore.opacity;
+        mockupOverlayStore.adjustOpacity(1);
+
+        expect(mockupOverlayStore.opacity).toBeLessThan(initialOpacity);
+      });
+
+      it("ignores scale change", () => {
+        mockupOverlayStore.cycleScale();
+
+        expect(mockupOverlayStore.scale).toBe(1);
+      });
+
+      it("ignores alignment changes", () => {
+        mockupOverlayStore.setAlignmentX("left");
+        mockupOverlayStore.setAlignmentY("bottom");
+
+        expect(mockupOverlayStore.alignmentX).toBe("center");
+        expect(mockupOverlayStore.alignmentY).toBe("top");
+      });
+
+      it("ignores movement", () => {
+        const initialPosition = { ...mockupOverlayStore.position };
+        mockupOverlayStore.move(50, 50);
+
+        expect(mockupOverlayStore.position).toEqual(initialPosition);
+      });
+    });
+
+    describe("solid state", () => {
+      beforeEach(() => {
+        mockupOverlayStore.enterSolidMode();
+        expect(mockupOverlayStore.mode).toBe("solid");
+      });
+
+      it("has full effective opacity", () => {
+        expect(mockupOverlayStore.effectiveOpacity).toBe(1);
+      });
+
+      it("reports isSolidOrZoomed as true", () => {
+        expect(mockupOverlayStore.isSolidOrZoomed).toBe(true);
+      });
+
+      it("can exit to previous mode (solid → visible)", () => {
+        mockupOverlayStore.exitSolidMode();
+
+        expect(mockupOverlayStore.mode).toBe("visible");
+      });
+
+      it("returns to locked if was locked before solid", async () => {
+        // Reset and start from locked
+        vi.resetModules();
+        const module = await import("./mockupOverlayStore.svelte");
+        const store = module.mockupOverlayStore;
+
+        await store.init();
+        store.toggleLock();
+        expect(store.mode).toBe("locked");
+
+        store.enterSolidMode();
+        expect(store.mode).toBe("solid");
+
+        store.exitSolidMode();
+        expect(store.mode).toBe("locked");
+
+        store.cleanup();
+      });
+
+      it("cannot toggle lock", () => {
+        mockupOverlayStore.toggleLock();
+
+        expect(mockupOverlayStore.mode).toBe("solid");
+      });
+
+      it("cannot start drag", () => {
+        const mockEvent = { clientX: 100, clientY: 100 } as MouseEvent;
+        mockupOverlayStore.startDrag(mockEvent);
+
+        expect(mockupOverlayStore.mode).toBe("solid");
+      });
+    });
+
+    describe("zoomed state", () => {
+      beforeEach(() => {
+        mockupOverlayStore.enterSolidMode();
+
+        // Mock document properties needed for zoom calculations
+        Object.defineProperty(document.documentElement, "clientWidth", { value: 1920, configurable: true });
+        Object.defineProperty(document.documentElement, "clientHeight", { value: 1080, configurable: true });
+        Object.defineProperty(window, "scrollX", { value: 0, configurable: true });
+        Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
+      });
+
+      it("can enter zoom from solid (solid → zoomed)", () => {
+        const mockEvent = { clientX: 500, clientY: 300 } as MouseEvent;
+        mockupOverlayStore.enterZoomMode(mockEvent);
+
+        expect(mockupOverlayStore.mode).toBe("zoomed");
+      });
+
+      it("doubles the scale when zoomed", () => {
+        const originalScale = mockupOverlayStore.scale;
+        const mockEvent = { clientX: 500, clientY: 300 } as MouseEvent;
+
+        mockupOverlayStore.enterZoomMode(mockEvent);
+
+        expect(mockupOverlayStore.scale).toBe(originalScale * 2);
+      });
+
+      it("reports isSolidOrZoomed as true", () => {
+        const mockEvent = { clientX: 500, clientY: 300 } as MouseEvent;
+        mockupOverlayStore.enterZoomMode(mockEvent);
+
+        expect(mockupOverlayStore.isSolidOrZoomed).toBe(true);
+      });
+
+      it("can exit zoom to solid (zoomed → solid)", () => {
+        const mockEvent = { clientX: 500, clientY: 300 } as MouseEvent;
+        mockupOverlayStore.enterZoomMode(mockEvent);
+
+        mockupOverlayStore.exitZoomMode();
+
+        expect(mockupOverlayStore.mode).toBe("solid");
+      });
+
+      it("restores scale when exiting zoom", () => {
+        const originalScale = mockupOverlayStore.scale;
+        const mockEvent = { clientX: 500, clientY: 300 } as MouseEvent;
+
+        mockupOverlayStore.enterZoomMode(mockEvent);
+        mockupOverlayStore.exitZoomMode();
+
+        expect(mockupOverlayStore.scale).toBe(originalScale);
+      });
+
+      it("can exit zoom via exitSolidMode (zoomed → visible/locked)", () => {
+        const mockEvent = { clientX: 500, clientY: 300 } as MouseEvent;
+        mockupOverlayStore.enterZoomMode(mockEvent);
+
+        mockupOverlayStore.exitSolidMode();
+
+        expect(mockupOverlayStore.mode).toBe("visible");
+      });
+    });
+
+    describe("dragging state", () => {
+      it("transitions to dragging on mouse down", () => {
+        const mockEvent = { clientX: 100, clientY: 100 } as MouseEvent;
+        mockupOverlayStore.startDrag(mockEvent);
+
+        expect(mockupOverlayStore.mode).toBe("dragging");
+      });
+
+      it("reports isDragging as true", () => {
+        const mockEvent = { clientX: 100, clientY: 100 } as MouseEvent;
+        mockupOverlayStore.startDrag(mockEvent);
+
+        expect(mockupOverlayStore.isDragging).toBe(true);
+      });
+
+      it("only allows drag from visible mode", () => {
+        mockupOverlayStore.toggleLock();
+        const mockEvent = { clientX: 100, clientY: 100 } as MouseEvent;
+
+        mockupOverlayStore.startDrag(mockEvent);
+
+        expect(mockupOverlayStore.mode).toBe("locked");
+        expect(mockupOverlayStore.isDragging).toBe(false);
+      });
+    });
+  });
+
+  describe("opacity controls", () => {
+    beforeEach(async () => {
+      await mockupOverlayStore.init();
+    });
+
+    it("adjusts opacity up (negative direction increases)", () => {
+      const initial = mockupOverlayStore.opacity;
+      mockupOverlayStore.adjustOpacity(-1);
+
+      expect(mockupOverlayStore.opacity).toBeGreaterThan(initial);
+    });
+
+    it("adjusts opacity down (positive direction decreases)", () => {
+      const initial = mockupOverlayStore.opacity;
+      mockupOverlayStore.adjustOpacity(1);
+
+      expect(mockupOverlayStore.opacity).toBeLessThan(initial);
+    });
+
+    it("clamps opacity to minimum", () => {
+      // Decrease many times to hit minimum
+      for (let i = 0; i < 20; i++) {
+        mockupOverlayStore.adjustOpacity(1);
+      }
+
+      expect(mockupOverlayStore.opacity).toBe(0.1);
+    });
+
+    it("clamps opacity to maximum", () => {
+      // Increase many times to hit maximum
+      for (let i = 0; i < 20; i++) {
+        mockupOverlayStore.adjustOpacity(-1);
+      }
+
+      expect(mockupOverlayStore.opacity).toBe(0.9);
+    });
+
+    it("resets opacity to default", () => {
+      mockupOverlayStore.adjustOpacity(1);
+      mockupOverlayStore.adjustOpacity(1);
+
+      mockupOverlayStore.resetOpacity();
+
+      expect(mockupOverlayStore.opacity).toBe(0.5);
+    });
+
+    it("persists opacity changes", () => {
+      mockupOverlayStore.adjustOpacity(1);
+
+      expect(updateSetting).toHaveBeenCalledWith("mockupOverlay", "opacity", expect.any(Number));
+    });
+  });
+
+  describe("visibility toggle", () => {
+    beforeEach(async () => {
+      await mockupOverlayStore.init();
+    });
+
+    it("toggles hidden state", () => {
+      expect(mockupOverlayStore.isHidden).toBe(false);
+
+      mockupOverlayStore.toggleVisibility();
+      expect(mockupOverlayStore.isHidden).toBe(true);
+
+      mockupOverlayStore.toggleVisibility();
+      expect(mockupOverlayStore.isHidden).toBe(false);
+    });
+
+    it("persists visibility changes", () => {
+      mockupOverlayStore.toggleVisibility();
+
+      expect(updateSetting).toHaveBeenCalledWith("mockupOverlay", "isHidden", true);
+    });
+
+    it("exits solid/zoomed mode when toggling visibility", () => {
+      mockupOverlayStore.enterSolidMode();
+      expect(mockupOverlayStore.mode).toBe("solid");
+
+      mockupOverlayStore.toggleVisibility();
+
+      expect(mockupOverlayStore.mode).toBe("visible");
+    });
+  });
+
+  describe("alignment", () => {
+    beforeEach(async () => {
+      await mockupOverlayStore.init();
+    });
+
+    it("sets horizontal alignment", () => {
+      mockupOverlayStore.setAlignmentX("left");
+      expect(mockupOverlayStore.alignmentX).toBe("left");
+
+      mockupOverlayStore.setAlignmentX("right");
+      expect(mockupOverlayStore.alignmentX).toBe("right");
+    });
+
+    it("sets vertical alignment", () => {
+      mockupOverlayStore.setAlignmentY("bottom");
+      expect(mockupOverlayStore.alignmentY).toBe("bottom");
+    });
+
+    it("sets both alignments at once", () => {
+      mockupOverlayStore.setAlignment("bottom", "right");
+
+      expect(mockupOverlayStore.alignmentX).toBe("right");
+      expect(mockupOverlayStore.alignmentY).toBe("bottom");
+    });
+
+    it("clears alignment", () => {
+      mockupOverlayStore.setAlignment("top", "center");
+      mockupOverlayStore.clearAlignment();
+
+      expect(mockupOverlayStore.alignmentX).toBeNull();
+      expect(mockupOverlayStore.alignmentY).toBeNull();
+    });
+
+    it("reports isAligned correctly", () => {
+      mockupOverlayStore.clearAlignment();
+      expect(mockupOverlayStore.isAligned).toBe(false);
+
+      mockupOverlayStore.setAlignmentX("center");
+      expect(mockupOverlayStore.isAligned).toBe(true);
+    });
+  });
+
+  describe("computed properties", () => {
+    beforeEach(async () => {
+      await mockupOverlayStore.init();
+    });
+
+    it("effectiveOpacity is 1 in solid mode", () => {
+      mockupOverlayStore.enterSolidMode();
+      expect(mockupOverlayStore.effectiveOpacity).toBe(1);
+    });
+
+    it("effectiveOpacity equals opacity in visible mode", () => {
+      expect(mockupOverlayStore.effectiveOpacity).toBe(mockupOverlayStore.opacity);
+    });
+
+    it("isVisibleOrLocked is true for visible/locked", () => {
+      expect(mockupOverlayStore.isVisibleOrLocked).toBe(true);
+
+      mockupOverlayStore.toggleLock();
+      expect(mockupOverlayStore.isVisibleOrLocked).toBe(true);
+
+      mockupOverlayStore.enterSolidMode();
+      expect(mockupOverlayStore.isVisibleOrLocked).toBe(false);
+    });
+
+    it("positionDisplay shows coordinates when not aligned", () => {
+      mockupOverlayStore.clearAlignment();
+      expect(mockupOverlayStore.positionDisplay).toMatch(/x:\d+, y:\d+/);
+    });
+
+    it("positionDisplay shows alignment when aligned", () => {
+      mockupOverlayStore.setAlignment("top", "center");
+      expect(mockupOverlayStore.positionDisplay).toBe("top-center");
+    });
+  });
+
+  describe("movement", () => {
+    beforeEach(async () => {
+      await mockupOverlayStore.init();
+    });
+
+    it("moves position by delta", () => {
+      const initial = { ...mockupOverlayStore.position };
+      mockupOverlayStore.move(10, 20);
+
+      expect(mockupOverlayStore.position.x).toBe(initial.x + 10);
+      expect(mockupOverlayStore.position.y).toBe(initial.y + 20);
+    });
+
+    it("clears alignment when moving", () => {
+      mockupOverlayStore.setAlignment("top", "center");
+      mockupOverlayStore.move(1, 1);
+
+      expect(mockupOverlayStore.alignmentX).toBeNull();
+      expect(mockupOverlayStore.alignmentY).toBeNull();
+    });
+
+    it("persists position after persistPosition call", () => {
+      mockupOverlayStore.move(50, 50);
+      mockupOverlayStore.persistPosition();
+
+      expect(updateSetting).toHaveBeenCalledWith("mockupOverlay", "position", expect.any(Object));
+    });
+  });
+
+  describe("scale cycling", () => {
+    beforeEach(async () => {
+      await mockupOverlayStore.init();
+      // Mock document properties needed for scale calculations
+      Object.defineProperty(document.documentElement, "clientWidth", { value: 1920, configurable: true });
+      Object.defineProperty(document.documentElement, "clientHeight", { value: 1080, configurable: true });
+      Object.defineProperty(window, "scrollX", { value: 0, configurable: true });
+      Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
+    });
+
+    it("cycles scale from 1 to 0.5", () => {
+      expect(mockupOverlayStore.scale).toBe(1);
+
+      mockupOverlayStore.cycleScale();
+
+      expect(mockupOverlayStore.scale).toBe(0.5);
+    });
+
+    it("cycles scale from 0.5 back to 1", async () => {
+      // Reset with 0.5 scale
+      vi.resetModules();
+      const dbModule = await import("./database");
+      const gsModule = dbModule.getSettingsByGroup as ReturnType<typeof vi.fn>;
+      gsModule.mockReset().mockResolvedValue({ scale: 0.5 });
+
+      const module = await import("./mockupOverlayStore.svelte");
+      const store = module.mockupOverlayStore;
+
+      await store.init();
+      expect(store.scale).toBe(0.5);
+
+      store.cycleScale();
+      expect(store.scale).toBe(1);
+
+      store.cleanup();
+    });
+
+    it("persists scale and position changes", () => {
+      mockupOverlayStore.cycleScale();
+
+      expect(updateSetting).toHaveBeenCalledWith("mockupOverlay", "scale", 0.5);
+      expect(updateSetting).toHaveBeenCalledWith("mockupOverlay", "position", expect.any(Object));
+    });
+
+    it("clears alignment when cycling scale", () => {
+      mockupOverlayStore.setAlignment("top", "center");
+      mockupOverlayStore.cycleScale();
+
+      expect(mockupOverlayStore.alignmentX).toBeNull();
+      expect(mockupOverlayStore.alignmentY).toBeNull();
+    });
+
+    it("does not cycle scale when not in visible mode", () => {
+      mockupOverlayStore.toggleLock();
+      expect(mockupOverlayStore.mode).toBe("locked");
+
+      mockupOverlayStore.cycleScale();
+
+      expect(mockupOverlayStore.scale).toBe(1);
+    });
+  });
+
+  describe("positionDisplay variations", () => {
+    beforeEach(async () => {
+      await mockupOverlayStore.init();
+    });
+
+    it("shows only Y alignment when X is null", () => {
+      mockupOverlayStore.clearAlignment();
+      mockupOverlayStore.setAlignmentY("top");
+
+      // alignmentX is null, alignmentY is "top", so should show just "top"
+      expect(mockupOverlayStore.positionDisplay).toBe("top");
+    });
+
+    it("shows only X alignment when Y is null", () => {
+      mockupOverlayStore.clearAlignment();
+      mockupOverlayStore.setAlignmentX("left");
+
+      // alignmentY is null, alignmentX is "left", so should show just "left"
+      expect(mockupOverlayStore.positionDisplay).toBe("left");
+    });
+
+    it("shows both alignments when both are set", () => {
+      mockupOverlayStore.setAlignment("bottom", "left");
+
+      expect(mockupOverlayStore.positionDisplay).toBe("bottom-left");
+    });
+
+    it("shows alignment with center", () => {
+      mockupOverlayStore.setAlignment("top", "center");
+
+      expect(mockupOverlayStore.positionDisplay).toBe("top-center");
+    });
+  });
+
+  describe("setActiveMockup", () => {
+    beforeEach(async () => {
+      await mockupOverlayStore.init();
+    });
+
+    it("sets active mockup id", () => {
+      mockupOverlayStore.setActiveMockup("new-mockup-id");
+
+      expect(mockupOverlayStore.activeMockupId).toBe("new-mockup-id");
+    });
+
+    it("clears active mockup when null", () => {
+      mockupOverlayStore.setActiveMockup("test-id");
+      mockupOverlayStore.setActiveMockup(null);
+
+      expect(mockupOverlayStore.activeMockupId).toBeNull();
+    });
+
+    it("unhides mockup when setting new active mockup", () => {
+      mockupOverlayStore.toggleVisibility();
+      expect(mockupOverlayStore.isHidden).toBe(true);
+
+      mockupOverlayStore.setActiveMockup("new-id");
+
+      expect(mockupOverlayStore.isHidden).toBe(false);
+    });
+
+    it("unlocks mockup when setting new active mockup", () => {
+      mockupOverlayStore.toggleLock();
+      expect(mockupOverlayStore.isLocked).toBe(true);
+
+      mockupOverlayStore.setActiveMockup("new-id");
+
+      expect(mockupOverlayStore.isLocked).toBe(false);
+      expect(mockupOverlayStore.mode).toBe("visible");
+    });
+
+    it("persists activeMockupId change", () => {
+      mockupOverlayStore.setActiveMockup("new-id");
+
+      expect(updateSetting).toHaveBeenCalledWith("mockupOverlay", "activeMockupId", "new-id");
+    });
+  });
+
+  describe("cleanup", () => {
+    it("removes event listeners", async () => {
+      await mockupOverlayStore.init();
+
+      const removeSpy = vi.spyOn(window, "removeEventListener");
+
+      mockupOverlayStore.cleanup();
+
+      expect(removeSpy).toHaveBeenCalled();
+      removeSpy.mockRestore();
+    });
+
+    it("does not throw when called multiple times", async () => {
+      await mockupOverlayStore.init();
+
+      expect(() => {
+        mockupOverlayStore.cleanup();
+        mockupOverlayStore.cleanup();
+      }).not.toThrow();
+    });
+  });
+
+  describe("getters", () => {
+    beforeEach(async () => {
+      await mockupOverlayStore.init();
+    });
+
+    it("activeMockupUrl is null initially", () => {
+      expect(mockupOverlayStore.activeMockupUrl).toBeNull();
+    });
+
+    it("mockupSize is zero initially", () => {
+      expect(mockupOverlayStore.mockupSize).toEqual({ width: 0, height: 0 });
+    });
+
+    it("isZoomPanning is false initially", () => {
+      expect(mockupOverlayStore.isZoomPanning).toBe(false);
+    });
+  });
+});

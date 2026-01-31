@@ -89,6 +89,7 @@
           <button
             class="header__toggle-button"
             class:enabled={gridOverlayStore.showSpacingGrid}
+            data-testid="btn-toggle-spacing"
             onclick={gridManagerStore.toggleSpacingGrid}
           >
             <IconToggle />
@@ -136,6 +137,7 @@
           <button
             class="header__toggle-button"
             class:enabled={gridOverlayStore.showLayoutGrid}
+            data-testid="btn-toggle-layout"
             onclick={gridManagerStore.toggleLayoutGrid}
           >
             <IconToggle />
@@ -245,8 +247,10 @@
       </section>
     </div>
     <footer class="footer">
-      <button class="footer__button" onclick={gridManagerStore.reset}>Reset Grid Settings</button>
-      <button class="footer__button" onclick={dockStore.enterToolbar}>Close</button>
+      <button class="footer__button" data-testid="btn-reset" onclick={gridManagerStore.reset}
+        >Reset Grid Settings</button
+      >
+      <button class="footer__button" data-testid="btn-close" onclick={dockStore.enterToolbar}>Close</button>
     </footer>
   </div>
 {/if}
@@ -406,9 +410,9 @@
       transition: color $transition-fast ease;
 
       :global(> svg) {
-        margin-top: 2px;
         width: rhythm(2);
         height: rhythm(2);
+        margin-top: 2px;
       }
 
       &:hover:not(:disabled) {
@@ -467,8 +471,8 @@
     }
 
     th {
-      padding: 0 rhythm(1);
       height: rhythm(5);
+      padding: 0 rhythm(1);
 
       &:not(:last-child) {
         border-right: $border-width-sm solid var(--border-light);
@@ -476,8 +480,8 @@
     }
 
     td {
-      padding: 0 rhythm(1);
       height: rhythm(4);
+      padding: 0 rhythm(1);
 
       &:not(:last-child) {
         border-right: $border-width-sm solid var(--border-light);
@@ -486,8 +490,8 @@
 
     > tfoot {
       td {
-        padding: 0 rhythm(1);
         height: rhythm(5);
+        padding: 0 rhythm(1);
       }
 
       input,

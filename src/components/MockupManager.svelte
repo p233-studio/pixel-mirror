@@ -108,12 +108,13 @@
     <footer class="footer">
       <button
         class="footer__button"
+        data-testid="btn-clear"
         onclick={mockupManagerStore.clear}
         disabled={mockupManagerStore.mockups.length === 0}
       >
         Clear Mockups
       </button>
-      <button class="footer__button" onclick={dockStore.enterToolbar}>Close</button>
+      <button class="footer__button" data-testid="btn-close" onclick={dockStore.enterToolbar}>Close</button>
     </footer>
   </div>
 {/if}
