@@ -234,10 +234,10 @@ function createKeyboardStore() {
     /**
      * Initialize the keyboard manager
      * Should be called once when the app mounts
+     * Keyboard shortcuts are always enabled, even on touch devices with external keyboards
      */
     init: () => {
       if (initialized) return;
-
       initialized = true;
 
       window.addEventListener("keydown", handleKeyDown);

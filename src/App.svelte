@@ -1,11 +1,105 @@
 <svelte:options customElement="pixel-mirror" />
 
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import Dock from "~/components/Dock.svelte";
   import GridOverlay from "~/components/GridOverlay.svelte";
   import MockupOverlay from "~/components/MockupOverlay.svelte";
   import Toast from "~/components/Toast.svelte";
+  import { DOUBLE_TAP_DELAY, DRAG_THRESHOLD_GLOBAL, SCROLL_COOLDOWN } from "~/constants";
   import { dockStore } from "~/stores/dockStore.svelte";
+  import { mockupOverlayStore } from "~/stores/mockupOverlayStore.svelte";
+  import { isTouchDevice } from "~/utils/device";
+
+  // Global double-tap state
+  let lastTapTime = 0;
+  let lastTapPos = { x: 0, y: 0 };
+  let lastScrollTime = 0;
+  let isScrolling = false;
+  let scrollEndTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function handleScroll() {
+    lastScrollTime = Date.now();
+    isScrolling = true;
+
+    // Clear existing timer
+    if (scrollEndTimer) clearTimeout(scrollEndTimer);
+
+    // Mark scroll as ended after a short delay
+    scrollEndTimer = setTimeout(() => {
+      isScrolling = false;
+    }, SCROLL_COOLDOWN);
+  }
+
+  function handleGlobalTouchEnd(e: TouchEvent) {
+    // Skip if in manager mode (mockups/grids panels)
+    if (dockStore.isManagerMode) return;
+
+    // Only handle single finger release
+    if (e.touches.length !== 0) return;
+
+    // Skip if user was scrolling recently (prevents accidental double-tap after scroll)
+    if (isScrolling || Date.now() - lastScrollTime < SCROLL_COOLDOWN) {
+      lastTapTime = 0; // Reset tap state
+      return;
+    }
+
+    const touch = e.changedTouches[0];
+    const now = Date.now();
+
+    // Check if this is a double-tap
+    const timeDiff = now - lastTapTime;
+    const dx = Math.abs(touch.clientX - lastTapPos.x);
+    const dy = Math.abs(touch.clientY - lastTapPos.y);
+
+    if (timeDiff < DOUBLE_TAP_DELAY && dx < DRAG_THRESHOLD_GLOBAL && dy < DRAG_THRESHOLD_GLOBAL) {
+      // Double-tap detected - toggle solid mode
+      e.preventDefault();
+      mockupOverlayStore.toggleMobileSolidMode();
+      lastTapTime = 0; // Reset to prevent triple-tap
+    } else {
+      // Record this tap for potential double-tap
+      lastTapTime = now;
+      lastTapPos = { x: touch.clientX, y: touch.clientY };
+    }
+  }
+
+  // Conditionally prevent browser zoom gestures and enable global double-tap
+  // - When mockup overlay is visible: disable zoom, enable double-tap to toggle solid mode
+  // - When mockup overlay is hidden: allow normal browser zoom behavior
+  // Note: Uses isTouchDevice() to check capability, but keyboard shortcuts work in parallel
+  $effect(() => {
+    // Only set up touch handlers on devices that support touch
+    // Keyboard shortcuts are handled separately and always work
+    if (!isTouchDevice()) return;
+
+    const isMockupVisible = !mockupOverlayStore.isHidden && !!mockupOverlayStore.activeMockupUrl;
+
+    if (isMockupVisible) {
+      document.documentElement.style.touchAction = "pan-x pan-y";
+      document.addEventListener("touchend", handleGlobalTouchEnd, { passive: false });
+      window.addEventListener("scroll", handleScroll, { passive: true });
+    } else {
+      document.documentElement.style.touchAction = "";
+      document.removeEventListener("touchend", handleGlobalTouchEnd);
+      window.removeEventListener("scroll", handleScroll);
+    }
+
+    return () => {
+      document.removeEventListener("touchend", handleGlobalTouchEnd);
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollEndTimer) clearTimeout(scrollEndTimer);
+    };
+  });
+
+  onDestroy(() => {
+    if (isTouchDevice()) {
+      document.documentElement.style.touchAction = "";
+      document.removeEventListener("touchend", handleGlobalTouchEnd);
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollEndTimer) clearTimeout(scrollEndTimer);
+    }
+  });
 </script>
 
 <div class="theme-root" class:dark={dockStore.theme === "dark"}>
@@ -41,6 +135,7 @@
     --btn-bg: #000;
     --btn-fg: #fff;
     --btn-hover-bg: #333;
+    --btn-disabled-bg: #555;
 
     // Focus
     --focus-ring: #d9daff;
@@ -52,7 +147,7 @@
     --color-danger: #fe0200;
 
     // Mockup
-    --mockup-border: #d9daff;
+    --mockup-border: #999;
     --mockup-border-hover: #000;
 
     // Alignment
@@ -67,8 +162,8 @@
     &.dark {
       --dock-bg: #1a1a1a;
       --dock-fg: #e8e8e8;
-      --dock-border: #1a1a1a;
-      --dock-outline: rgba(255, 255, 255, 0.2);
+      --dock-border: #4d4d4d;
+      --dock-outline: rgba(255, 255, 255, 0.1);
 
       --text-primary: #e8e8e8;
       --text-secondary: #999;
@@ -81,16 +176,17 @@
       --input-placeholder: #666;
       --input-border: #4a4a4a;
 
-      --btn-bg: #4a4a4a;
+      --btn-bg: #3a3a3a;
       --btn-fg: #e8e8e8;
       --btn-hover-bg: #5a5a5a;
+      --btn-disabled-bg: #6a6a6a;
 
       --focus-ring: #7a7cb8;
       --focus-bg: rgba(122, 124, 184, 0.2);
 
       --color-success-bg: rgba(16, 185, 129, 0.15);
 
-      --mockup-border: #4a4a4a;
+      --mockup-border: #5a5a5a;
       --mockup-border-hover: #e8e8e8;
 
       --align-x-bg: rgba(120, 170, 240, 0.2);

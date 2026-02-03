@@ -48,6 +48,23 @@ const ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"
 const RESIZE_DEBOUNCE_MS = 100;
 
 // ============================================
+// Touch Settings
+// ============================================
+
+// Double-tap detection window (ms)
+const DOUBLE_TAP_DELAY = 300;
+
+// Minimum movement (px) before considering it a drag vs tap
+// MockupOverlay uses smaller threshold for precision
+const DRAG_THRESHOLD = 5;
+
+// Global double-tap uses larger threshold (more forgiving on whole page)
+const DRAG_THRESHOLD_GLOBAL = 10;
+
+// Cooldown after scroll before accepting taps (prevents accidental double-tap)
+const SCROLL_COOLDOWN = 150;
+
+// ============================================
 // Validation Limits
 // ============================================
 
@@ -58,6 +75,9 @@ export {
   ALLOWED_MIME_TYPES,
   DEFAULT_GRID_OVERLAY_SETTINGS,
   DEFAULT_GRID_TEMPLATE,
+  DOUBLE_TAP_DELAY,
+  DRAG_THRESHOLD,
+  DRAG_THRESHOLD_GLOBAL,
   GRID_COLUMNS_MAX,
   GRID_COLUMNS_MIN,
   MAX_FILE_SIZE,
@@ -68,5 +88,6 @@ export {
   OPACITY_STEP,
   RESIZE_DEBOUNCE_MS,
   SCALE_OPTIONS,
+  SCROLL_COOLDOWN,
   ZOOM_FACTOR
 };

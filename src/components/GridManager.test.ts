@@ -278,6 +278,15 @@ describe("GridManager component", () => {
       expect(footerInputs.length).toBe(3); // width, columns, gutter
     });
 
+    it("sets inputmode=numeric only on columns input for mobile numeric keyboard", () => {
+      const { container } = render(GridManager);
+
+      const footerInputs = container.querySelectorAll("tfoot input") as NodeListOf<HTMLInputElement>;
+      expect(footerInputs[0].getAttribute("inputmode")).toBeNull(); // width: needs unit input
+      expect(footerInputs[1].getAttribute("inputmode")).toBe("numeric"); // columns: digits only
+      expect(footerInputs[2].getAttribute("inputmode")).toBeNull(); // gutter: needs unit input
+    });
+
     it("renders Add button", () => {
       const { container } = render(GridManager);
 
@@ -298,7 +307,7 @@ describe("GridManager component", () => {
       const { container } = render(GridManager);
 
       const resetBtn = container.querySelector("[data-testid='btn-reset']");
-      expect(resetBtn?.textContent).toContain("Reset Grid Settings");
+      expect(resetBtn?.textContent).toContain("Reset All Settings");
     });
 
     it("renders Close button", () => {

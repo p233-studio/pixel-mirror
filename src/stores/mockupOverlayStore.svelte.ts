@@ -65,6 +65,18 @@ function createMockupOverlayStore() {
   // Track mode before entering solid/zoomed to restore correctly
   let modeBeforeSolid = $state<"visible" | "locked">("visible");
 
+  // Derived position display - uses $derived for proper reactivity tracking
+  // eslint-disable-next-line prefer-const
+  let positionDisplay = $derived.by(() => {
+    if (alignmentX === null && alignmentY === null) {
+      return `x:${Math.round(bufferedPosition.x)}, y:${Math.round(bufferedPosition.y)}`;
+    }
+    const parts: string[] = [];
+    if (alignmentY) parts.push(alignmentY);
+    if (alignmentX) parts.push(alignmentX);
+    return parts.join("·");
+  });
+
   // Initialization
   let initialized = $state(false);
   let initPromise: Promise<void> | null = null;
@@ -77,6 +89,17 @@ function createMockupOverlayStore() {
   let zoomInitialPosition = { x: 0, y: 0 };
   let zoomMouseStart = { x: 0, y: 0 };
   let preZoomScale = 1;
+
+  // Mobile touch state (not reactive)
+  let touchDragStart = { x: 0, y: 0 };
+  let touchInitialPosition = { x: 0, y: 0 };
+  let pinchStartDistance = 0;
+  let pinchStartScale = 1;
+  let pinchCenter = { x: 0, y: 0 }; // Fixed center point for pinch
+  let pinchStartPosition = { x: 0, y: 0 }; // Position at pinch start
+  let solidPanStart = { x: 0, y: 0 };
+  let solidPanInitialPosition = { x: 0, y: 0 };
+  let preSolidScale = 1;
 
   // ============================================
   // Internal helpers
@@ -285,13 +308,7 @@ function createMockupOverlayStore() {
       return mode === "solid" || mode === "zoomed" ? 1 : opacity;
     },
     get positionDisplay() {
-      if (alignmentX === null && alignmentY === null) {
-        return `x:${Math.round(bufferedPosition.x)}, y:${Math.round(bufferedPosition.y)}`;
-      }
-      const parts: string[] = [];
-      if (alignmentY) parts.push(alignmentY);
-      if (alignmentX) parts.push(alignmentX);
-      return parts.join("-");
+      return positionDisplay;
     },
 
     // ============================================
@@ -599,6 +616,211 @@ function createMockupOverlayStore() {
       if (activeMockupUrl) {
         URL.revokeObjectURL(activeMockupUrl);
       }
+    },
+
+    // ============================================
+    // Mobile Touch Methods
+    // ============================================
+    // Mobile state machine (simplified):
+    // - visible ⇄ locked ⇄ dragging ⇄ solid (with pinch zoom)
+    // - No zoomed state on mobile
+    // - Double tap to toggle solid mode
+    // - Single finger drag in visible mode
+    // - Pinch to zoom in solid mode
+    // - Single finger pan in solid mode (follows finger direction)
+
+    /**
+     * Set opacity directly (for mobile slider)
+     */
+    setOpacity: (value: number) => {
+      if (mode !== "visible" && mode !== "locked") return;
+
+      opacity = clamp(roundTo(value, 2), OPACITY_MIN, OPACITY_MAX);
+      updateSetting("mockupOverlay", "opacity", opacity).catch(toastStore.showError);
+    },
+
+    /**
+     * Start touch drag (visible mode only)
+     */
+    startTouchDrag: (e: TouchEvent) => {
+      if (mode !== "visible") return;
+
+      const touch = e.touches[0];
+      mode = "dragging";
+      touchDragStart = { x: touch.clientX, y: touch.clientY };
+      touchInitialPosition = { ...bufferedPosition };
+    },
+
+    /**
+     * Handle touch drag movement
+     */
+    handleTouchDrag: (e: TouchEvent) => {
+      if (mode !== "dragging") return;
+
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchDragStart.x;
+      const dy = touch.clientY - touchDragStart.y;
+
+      bufferedPosition = {
+        x: touchInitialPosition.x + dx,
+        y: touchInitialPosition.y + dy
+      };
+    },
+
+    /**
+     * End touch drag - persist position
+     */
+    endTouchDrag: () => {
+      if (mode !== "dragging") return;
+
+      mode = "visible";
+      clearAlignmentInternal();
+
+      persistedPosition = { ...bufferedPosition };
+      updateSetting("mockupOverlay", "position", { ...persistedPosition }).catch(toastStore.showError);
+    },
+
+    /**
+     * Toggle solid mode on mobile (double tap)
+     */
+    toggleMobileSolidMode: () => {
+      if (mode === "solid") {
+        // Exit solid mode - restore scale and position
+        scale = preSolidScale;
+        bufferedPosition = { ...persistedPosition };
+        mode = modeBeforeSolid;
+      } else if (mode === "visible" || mode === "locked") {
+        // Enter solid mode - save current state
+        modeBeforeSolid = mode;
+        preSolidScale = scale;
+        mode = "solid";
+      }
+    },
+
+    /**
+     * Start pinch zoom (solid mode, 2 fingers) - Touch Events fallback
+     */
+    startPinch: (e: TouchEvent) => {
+      if (mode !== "solid" || e.touches.length < 2) return;
+
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dx = touch2.clientX - touch1.clientX;
+      const dy = touch2.clientY - touch1.clientY;
+
+      pinchStartDistance = Math.sqrt(dx * dx + dy * dy);
+      pinchStartScale = scale;
+      pinchStartPosition = { ...bufferedPosition };
+
+      // Fix the center point at pinch start (in page coordinates)
+      pinchCenter = {
+        x: (touch1.clientX + touch2.clientX) / 2 + window.scrollX,
+        y: (touch1.clientY + touch2.clientY) / 2 + window.scrollY
+      };
+    },
+
+    /**
+     * Handle pinch zoom - Touch Events fallback
+     */
+    handlePinch: (e: TouchEvent) => {
+      if (mode !== "solid" || e.touches.length < 2 || pinchStartDistance === 0) return;
+
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dx = touch2.clientX - touch1.clientX;
+      const dy = touch2.clientY - touch1.clientY;
+
+      const currentDistance = Math.sqrt(dx * dx + dy * dy);
+      const scaleRatio = currentDistance / pinchStartDistance;
+      const newScale = clamp(pinchStartScale * scaleRatio, 0.25, 4);
+
+      // Calculate the point on the mockup that was at the pinch center
+      const pointX = (pinchCenter.x - pinchStartPosition.x) / pinchStartScale;
+      const pointY = (pinchCenter.y - pinchStartPosition.y) / pinchStartScale;
+
+      // Keep that point at the same screen position
+      bufferedPosition = {
+        x: pinchCenter.x - pointX * newScale,
+        y: pinchCenter.y - pointY * newScale
+      };
+
+      scale = newScale;
+    },
+
+    /**
+     * End pinch - reset pinch state
+     */
+    endPinch: () => {
+      pinchStartDistance = 0;
+      pinchStartScale = scale;
+    },
+
+    // ============================================
+    // Safari Gesture Events (preferred on iOS/Safari)
+    // ============================================
+    // These events provide e.scale directly, smoother than calculating from touch points
+
+    /**
+     * Start gesture pinch (Safari Gesture Events)
+     * @param centerX - center X coordinate of the gesture (in page coordinates)
+     * @param centerY - center Y coordinate of the gesture (in page coordinates)
+     */
+    startGesturePinch: (centerX: number, centerY: number) => {
+      if (mode !== "solid") return;
+
+      pinchStartScale = scale;
+      pinchStartPosition = { ...bufferedPosition };
+      pinchCenter = { x: centerX, y: centerY };
+    },
+
+    /**
+     * Handle gesture pinch (Safari Gesture Events)
+     * @param gestureScale - cumulative scale from gesture start (e.scale from GestureEvent)
+     */
+    handleGesturePinch: (gestureScale: number) => {
+      if (mode !== "solid") return;
+
+      const newScale = clamp(pinchStartScale * gestureScale, 0.25, 4);
+
+      // Calculate the point on the mockup that was at the pinch center
+      const pointX = (pinchCenter.x - pinchStartPosition.x) / pinchStartScale;
+      const pointY = (pinchCenter.y - pinchStartPosition.y) / pinchStartScale;
+
+      // Keep that point at the same screen position
+      bufferedPosition = {
+        x: pinchCenter.x - pointX * newScale,
+        y: pinchCenter.y - pointY * newScale
+      };
+
+      scale = newScale;
+    },
+
+    /**
+     * Start solid mode pan (single finger in solid mode)
+     */
+    startSolidPan: (e: TouchEvent) => {
+      if (mode !== "solid") return;
+
+      const touch = e.touches[0];
+      solidPanStart = { x: touch.clientX, y: touch.clientY };
+      solidPanInitialPosition = { ...bufferedPosition };
+    },
+
+    /**
+     * Handle solid mode pan - follows finger direction (same direction)
+     */
+    handleSolidPan: (e: TouchEvent) => {
+      if (mode !== "solid") return;
+
+      const touch = e.touches[0];
+      const dx = touch.clientX - solidPanStart.x;
+      const dy = touch.clientY - solidPanStart.y;
+
+      // Same direction - finger moves up, image moves up
+      bufferedPosition = {
+        x: solidPanInitialPosition.x + dx,
+        y: solidPanInitialPosition.y + dy
+      };
     }
   };
 }

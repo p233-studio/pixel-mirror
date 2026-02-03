@@ -31,6 +31,23 @@ interface PixelMirrorDBSchema extends DBSchema {
   };
 }
 
+/**
+ * Generate a UUID v4 string.
+ * crypto.randomUUID() requires a secure context (HTTPS or localhost).
+ * Mobile devices accessing the dev server via LAN IP use HTTP, which is
+ * not a secure context. Fall back to crypto.getRandomValues() in that case.
+ */
+function generateId(): string {
+  if (typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 let dbPromise: Promise<IDBPDatabase<PixelMirrorDBSchema>>;
 
 async function getDB(): Promise<IDBPDatabase<PixelMirrorDBSchema>> {
@@ -96,7 +113,7 @@ export async function addMockups(input: MockupInput | MockupInput[]): Promise<vo
 
     const now = Date.now();
     const putPromises = inputs.map((item, index) => {
-      const id = crypto.randomUUID();
+      const id = generateId();
       const { originalBuffer, ...rest } = item;
       const metadata = { ...rest, id, createdAt: now + index };
       return Promise.all([metadataStore.put(metadata), blobStore.put(originalBuffer, id)]);
@@ -159,7 +176,7 @@ export async function addGrid(input: GridInput): Promise<string> {
     const db = await getDB();
     const grid: LayoutGridConfig = {
       ...input,
-      id: crypto.randomUUID(),
+      id: generateId(),
       createdAt: Date.now()
     };
     await db.put("grids", grid);

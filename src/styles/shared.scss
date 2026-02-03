@@ -8,7 +8,7 @@ $transition-fast: 0.2s;
 // Border
 $border-width-sm: 1px;
 $border-width-md: 2px;
-$outline-width: 3px;
+$outline-width: 2px;
 
 // Functions
 @function rhythm($n) {
@@ -35,14 +35,17 @@ $outline-width: 3px;
 @mixin manager-container {
   height: 100%;
   overflow: hidden;
-  padding: 0 rhythm(0.5);
 }
 
 @mixin manager-inner {
   height: 100%;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: rhythm(1.5) rhythm(2.5);
+  padding: rhythm(3) rhythm(3) rhythm(5);
+
+  @media (max-width: 680px) {
+    padding: rhythm(2) rhythm(2) rhythm(4);
+  }
 }
 
 @mixin manager-footer {
@@ -52,7 +55,7 @@ $outline-width: 3px;
   left: 0;
   z-index: 1;
   display: flex;
-  gap: rhythm(2);
+  gap: rhythm(1);
   align-items: center;
   width: max-content;
   margin: auto;
@@ -73,13 +76,31 @@ $outline-width: 3px;
 
   &:disabled {
     cursor: not-allowed;
+    background: var(--btn-disabled-bg);
+  }
+}
+
+@mixin icon-button {
+  padding: rhythm(0.75);
+
+  &:focus-visible {
+    background: var(--focus-bg);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
     opacity: 0.5;
   }
 }
 
 @mixin manager-footer-button {
   @include btn-base;
-  width: 168px;
+  width: 160px;
   font-size: 15px;
   line-height: rhythm(4);
+
+  @media (max-width: 420px) {
+    width: 132px;
+    font-size: 14px;
+  }
 }

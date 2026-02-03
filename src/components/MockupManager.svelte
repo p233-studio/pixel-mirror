@@ -73,37 +73,35 @@
 {#if mockupManagerStore.initialized}
   <div class="container" role="region" aria-label="Mockup Manager" ondrop={handleDrop} ondragover={handleDragOver}>
     <div class="inner">
-      <section class="section">
-        <div class="grid">
-          <label class="upload-button">
-            <span class="upload-button__icon">
-              <IconUpload />
-            </span>
-            <span class="upload-button__text">Upload Mockup</span>
-            <input type="file" accept={ALLOWED_MIME_TYPES.join(",")} multiple onchange={handleInputChange} />
-          </label>
+      <div class="grid">
+        <label class="upload-button">
+          <span class="upload-button__icon">
+            <IconUpload />
+          </span>
+          <span class="upload-button__text">Upload Mockups</span>
+          <input type="file" accept={ALLOWED_MIME_TYPES.join(",")} multiple onchange={handleInputChange} />
+        </label>
 
-          {#each mockupManagerStore.mockups as mockup (mockup.id)}
-            {@const isActive = mockupManagerStore.activeMockupId === mockup.id}
-            <div class="mockup" class:active={isActive}>
-              <button class="mockup__preview" type="button" disabled={isActive} onclick={() => handleSelect(mockup.id)}>
-                <img
-                  class="mockup__image"
-                  use:blobSrc={{ buffer: mockup.thumbnailBuffer, mimeType: mockup.mimeType }}
-                  alt={mockup.filename}
-                  draggable="false"
-                />
-              </button>
-              {#if isActive}
-                <div class="mockup__indicator"></div>
-              {/if}
-              <button class="mockup__delete" onclick={(e) => handleDelete(e, mockup.id)} title="Delete mockup">
-                <IconDelete />
-              </button>
-            </div>
-          {/each}
-        </div>
-      </section>
+        {#each mockupManagerStore.mockups as mockup (mockup.id)}
+          {@const isActive = mockupManagerStore.activeMockupId === mockup.id}
+          <div class="mockup" class:active={isActive}>
+            <button class="mockup__preview" type="button" disabled={isActive} onclick={() => handleSelect(mockup.id)}>
+              <img
+                class="mockup__image"
+                use:blobSrc={{ buffer: mockup.thumbnailBuffer, mimeType: mockup.mimeType }}
+                alt={mockup.filename}
+                draggable="false"
+              />
+            </button>
+            {#if isActive}
+              <div class="mockup__indicator"></div>
+            {/if}
+            <button class="mockup__delete" onclick={(e) => handleDelete(e, mockup.id)} title="Delete mockup">
+              <IconDelete />
+            </button>
+          </div>
+        {/each}
+      </div>
     </div>
     <footer class="footer">
       <button
@@ -136,13 +134,9 @@
     }
   }
 
-  .section {
-    padding: rhythm(1) 0;
-  }
-
   .grid {
     display: grid;
-    grid-template-columns: repeat(4, 180px);
+    grid-template-columns: repeat(4, 1fr);
     gap: rhythm(2);
   }
 
@@ -155,8 +149,8 @@
     cursor: pointer;
     outline: none;
     background: transparent;
-    border: $border-width-md dashed var(--text-secondary);
-    border-radius: rhythm(1.5);
+    border: $border-width-md solid var(--mockup-border);
+    border-radius: rhythm(2);
     transition: background $transition-fast ease;
 
     &:hover,
@@ -181,6 +175,7 @@
     &__text {
       font-size: 15px;
       font-weight: 500;
+      line-height: 24px;
     }
   }
 
@@ -190,11 +185,12 @@
 
   .mockup {
     position: relative;
-    width: 180px;
-    height: 180px;
+    aspect-ratio: 1 / 1;
 
-    &:hover .mockup__delete {
-      opacity: 1;
+    @media (hover: hover) {
+      &:hover .mockup__delete {
+        opacity: 1;
+      }
     }
 
     &.active .mockup__preview {
@@ -248,10 +244,13 @@
       color: var(--btn-fg);
       background: var(--btn-bg);
       border-radius: rhythm(2);
-      opacity: 0;
       transition:
         background $transition-fast ease,
         opacity $transition-fast ease;
+
+      @media (hover: hover) {
+        opacity: 0;
+      }
 
       :global(> svg) {
         width: rhythm(2.5);
@@ -264,10 +263,18 @@
         opacity: 1;
         @include focus-ring;
       }
+    }
+  }
 
-      &:active {
-        transform: none;
-      }
+  @media (max-width: 680px) {
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 </style>

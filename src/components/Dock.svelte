@@ -2,6 +2,8 @@
   // Svelte
   import { onMount } from "svelte";
 
+  // Utils
+  import { isLastInputTouch, isTouchDevice } from "~/utils/device";
   // Icons
   import IconAlignBottom from "~/assets/align-bottom-stroke-rounded.svg?component";
   import IconAlignCenterX from "~/assets/align-horizontal-center-stroke-rounded.svg?component";
@@ -30,6 +32,11 @@
   let showAlignmentOptions = $state(false);
   let dockElement: HTMLDivElement;
 
+  // Mobile touch state for opacity slider
+  let opacitySliding = $state(false);
+  let opacitySlideStartX = 0;
+  let opacitySlideStartValue = 0;
+
   // Derived values from mockupOverlayStore
   let opacityDisplay = $derived(Math.round(mockupOverlayStore.opacity * 100));
   let scaleDisplay = $derived(mockupOverlayStore.scale === 0.5 ? ".5x" : `${mockupOverlayStore.scale}x`);
@@ -50,11 +57,16 @@
   let showPositionDisplay = $derived(dockStore.mode === "toolbar" && !showAlignmentOptions && !isControlsDisabled);
 
   function handleAlignmentMouseEnter() {
+    // Skip hover behavior if last input was touch (prevents accidental activation on hybrid devices)
+    if (isLastInputTouch()) return;
     if (isDragging) return;
     showAlignmentOptions = true;
   }
 
   function handleAlignmentMouseLeave(e: MouseEvent) {
+    // Skip if last input was touch
+    if (isLastInputTouch()) return;
+
     const target = e.relatedTarget as Element | null;
     const isRelatedToAlignment = target?.closest(".dock__popover") || target?.closest(".alignment-trigger-btn");
 
@@ -62,6 +74,95 @@
       showAlignmentOptions = false;
     }
   }
+
+  // ============================================
+  // Mobile Touch Handlers
+  // ============================================
+
+  /**
+   * Handle alignment button click - three-stage cycle:
+   * 1. If popover is closed: open popover
+   * 2. If popover is open AND alignment is NOT top-center: set to top-center
+   * 3. If popover is open AND alignment IS top-center: close popover
+   *
+   * This behavior is consistent for both desktop and mobile.
+   * Desktop can also open popover via hover.
+   */
+  function handleAlignmentClick() {
+    const isTopCenter = mockupOverlayStore.alignmentY === "top" && mockupOverlayStore.alignmentX === "center";
+
+    if (!showAlignmentOptions) {
+      // Stage 1: Open popover
+      showAlignmentOptions = true;
+    } else if (!isTopCenter) {
+      // Stage 2: Set to top-center (popover stays open)
+      mockupOverlayStore.setAlignment("top", "center");
+    } else {
+      // Stage 3: Already at top-center, close popover
+      showAlignmentOptions = false;
+    }
+  }
+
+  /**
+   * Start opacity touch slide
+   */
+  function handleOpacityTouchStart(e: TouchEvent) {
+    if (!isTouchDevice()) return;
+
+    e.preventDefault();
+    opacitySliding = true;
+    opacitySlideStartX = e.touches[0].clientX;
+    opacitySlideStartValue = mockupOverlayStore.opacity;
+
+    window.addEventListener("touchmove", handleOpacityTouchMove, { passive: false });
+    window.addEventListener("touchend", handleOpacityTouchEnd);
+  }
+
+  /**
+   * Handle opacity touch move - adjust opacity based on horizontal slide
+   */
+  function handleOpacityTouchMove(e: TouchEvent) {
+    if (!opacitySliding) return;
+
+    e.preventDefault();
+    const dx = e.touches[0].clientX - opacitySlideStartX;
+    // 100px slide = 50% opacity change
+    const deltaOpacity = dx / 200;
+    const newOpacity = opacitySlideStartValue + deltaOpacity;
+    mockupOverlayStore.setOpacity(newOpacity);
+  }
+
+  /**
+   * End opacity touch slide
+   */
+  function handleOpacityTouchEnd() {
+    opacitySliding = false;
+    window.removeEventListener("touchmove", handleOpacityTouchMove);
+    window.removeEventListener("touchend", handleOpacityTouchEnd);
+  }
+
+  // Effect to close alignment popover when clicking outside the dock on mobile
+  $effect(() => {
+    if (!isTouchDevice() || !showAlignmentOptions) return;
+
+    const handleOutsideDock = (e: Event) => {
+      const path = e.composedPath();
+      // Close only if clicking outside the entire dock
+      if (!path.includes(dockElement)) {
+        showAlignmentOptions = false;
+      }
+    };
+
+    // Use setTimeout to avoid closing immediately on the same tap that opened it
+    const timer = setTimeout(() => {
+      window.addEventListener("touchend", handleOutsideDock);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("touchend", handleOutsideDock);
+    };
+  });
 
   $effect(() => {
     if (!dockStore.isManagerMode) return;
@@ -97,6 +198,7 @@
   bind:this={dockElement}
   class="dock"
   class:at-top={dockStore.position === "top"}
+  class:is-manager={dockStore.isManagerMode}
   class:is-dragging={isDragging}
   style:--transition-duration="{DOCK_TRANSITION_DURATION}ms"
   style:width="{dockStore.size.width}px"
@@ -133,9 +235,11 @@
       </button>
       <button
         class="icon-button opacity-button"
+        class:sliding={opacitySliding}
         data-testid="btn-opacity"
         disabled={isControlsDisabled}
         onclick={mockupOverlayStore.resetOpacity}
+        ontouchstart={isTouchDevice() ? handleOpacityTouchStart : undefined}
         title="Opacity (Click to reset, Ctrl+Scroll to adjust)"
       >
         <IconOpacity />
@@ -147,7 +251,7 @@
         disabled={isControlsDisabled || isLocked}
         onmouseenter={handleAlignmentMouseEnter}
         onmouseleave={handleAlignmentMouseLeave}
-        onclick={() => mockupOverlayStore.setAlignment("top", "center")}
+        onclick={handleAlignmentClick}
         title="Alignment (Click for top-center)"
       >
         <IconAlignment />
@@ -258,17 +362,19 @@
 <style lang="scss">
   .dock {
     position: fixed;
-    right: rhythm(2);
-    bottom: rhythm(4);
-    left: rhythm(2);
+    right: rhythm(1);
+    bottom: rhythm(3);
+    left: rhythm(1);
     z-index: $max-z-index;
-    max-width: calc(100vw - #{rhythm(4)});
-    max-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: calc(100vw - #{rhythm(2)});
+    max-height: 75vh;
     margin-right: auto;
     margin-left: auto;
     font-family: "Arial", sans-serif;
     color: var(--dock-fg);
-    user-select: none;
     outline: $outline-width solid var(--dock-outline);
     background: var(--dock-bg);
     border: $border-width-md solid var(--dock-border);
@@ -276,8 +382,21 @@
     transform: translateZ(0);
     transition:
       width var(--transition-duration) $timing-function,
-      height var(--transition-duration) $timing-function;
-    will-change: width, height;
+      height var(--transition-duration) $timing-function,
+      border-radius var(--transition-duration) $timing-function;
+    will-change: width, height, border-radius;
+
+    &[hidden] {
+      display: none !important;
+    }
+
+    // Prevent pinch zoom and text selection on dock elements
+    // touch-action is NOT inherited, so mustbe set on each element
+    &,
+    * {
+      touch-action: pan-x pan-y;
+      user-select: none;
+    }
 
     &.at-top {
       top: rhythm(5);
@@ -309,7 +428,7 @@
     &__popover {
       position: absolute;
       bottom: 100%;
-      left: 92px;
+      left: 74px;
       z-index: 2;
       display: flex;
       align-items: center;
@@ -330,28 +449,23 @@
   }
 
   .toolbar {
-    position: absolute;
-    top: 50%;
-    left: 50%;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
-    padding: 0 rhythm(1.5);
+    max-width: 100%;
+    padding: 0 rhythm(1);
     overflow-x: auto;
-    transform: translate(-50%, -50%);
+    -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
 
   .icon-button {
-    padding: rhythm(1) rhythm(0.75);
-    opacity: 0.75;
-
-    &:not(:disabled):hover {
-      opacity: 1;
-    }
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.25;
-    }
+    @include icon-button;
 
     &.flip {
       transform: rotate(180deg);
@@ -365,15 +479,20 @@
   .opacity-button {
     position: relative;
 
+    &.sliding {
+      background: var(--btn-hover);
+      opacity: 1;
+    }
+
     &__value {
       position: absolute;
-      top: 18px;
+      top: 14px;
       right: 0;
       left: 0;
       z-index: 1;
       font-size: 8px;
       font-weight: 700;
-      line-height: 1;
+      line-height: 12px;
       text-align: center;
     }
   }
@@ -439,6 +558,10 @@
     padding: 2px;
     border-radius: rhythm(0.75);
 
+    &:focus-visible {
+      @include focus-ring($border-width-md);
+    }
+
     :global(> svg) {
       width: 24px;
       height: 24px;
@@ -461,6 +584,13 @@
 
     to {
       opacity: 1;
+    }
+  }
+
+  // Mobile responsive styles - reduce border radius when manager is open
+  @media (max-width: 680px) {
+    .dock.is-manager {
+      border-radius: rhythm(3);
     }
   }
 </style>

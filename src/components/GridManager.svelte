@@ -218,7 +218,13 @@
                     <input type="text" placeholder="1140px" bind:value={newGridWidth} spellcheck="false" />
                   </td>
                   <td>
-                    <input type="text" placeholder="12" bind:value={newGridColumns} spellcheck="false" />
+                    <input
+                      type="text"
+                      inputmode="numeric"
+                      placeholder="12"
+                      bind:value={newGridColumns}
+                      spellcheck="false"
+                    />
                   </td>
                   <td>
                     <input type="text" placeholder="24px" bind:value={newGridGutter} spellcheck="false" />
@@ -247,8 +253,7 @@
       </section>
     </div>
     <footer class="footer">
-      <button class="footer__button" data-testid="btn-reset" onclick={gridManagerStore.reset}
-        >Reset Grid Settings</button
+      <button class="footer__button" data-testid="btn-reset" onclick={gridManagerStore.reset}>Reset All Settings</button
       >
       <button class="footer__button" data-testid="btn-close" onclick={dockStore.enterToolbar}>Close</button>
     </footer>
@@ -273,7 +278,9 @@
   }
 
   .section {
-    padding: rhythm(1) 0;
+    &:not(:last-child) {
+      margin-bottom: rhythm(4);
+    }
 
     &__content {
       transition: opacity $transition-fast ease;
@@ -292,9 +299,9 @@
     margin-bottom: rhythm(1);
 
     &__title {
-      margin: 0 0 rhythm(1);
-      font-size: 20px;
-      line-height: rhythm(4);
+      margin: 0;
+      font-size: 18px;
+      line-height: rhythm(3);
     }
 
     &__toggle-button {
@@ -337,7 +344,7 @@
     align-items: center;
     padding: rhythm(1) rhythm(2);
     margin: 0 0 rhythm(2);
-    border-color: var(--btn-bg);
+    border: $border-width-md solid var(--border-medium);
     border-radius: rhythm(1.5);
 
     &:has(:focus-visible) {
@@ -350,6 +357,7 @@
 
     &__legend {
       padding: 0 rhythm(1);
+      margin-left: rhythm(-0.5);
       font-size: 15px;
       line-height: 24px;
       color: var(--btn-fg);
@@ -393,7 +401,7 @@
   .table {
     width: max-content;
     min-width: 100%;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 16px;
     text-align: left;
     white-space: nowrap;
@@ -425,7 +433,7 @@
 
       &:disabled {
         cursor: not-allowed;
-        opacity: 0.3;
+        opacity: 0.5;
       }
     }
 
@@ -496,13 +504,19 @@
 
       input,
       select {
-        height: 24px;
-        font-size: 14px;
+        height: rhythm(3);
+        font-size: 15px;
         color: var(--input-text);
         outline: none;
         background: var(--input-bg);
         border: $border-width-sm solid var(--input-border);
         border-radius: rhythm(0.75);
+        padding: 0 rhythm(0.5);
+
+        // Prevent iOS Safari auto-zoom on input focus (requires >= 16px)
+        @media (max-width: 680px) {
+          font-size: 16px;
+        }
 
         &:focus-visible {
           @include focus-ring($border-width-md);
@@ -511,7 +525,6 @@
 
       input {
         width: 72px;
-        padding: 0 rhythm(1);
 
         &::placeholder {
           color: var(--input-placeholder);
@@ -519,7 +532,6 @@
       }
 
       select {
-        padding: 0 rhythm(0.5);
         cursor: pointer;
       }
     }
@@ -528,7 +540,7 @@
       @include btn-base;
       height: rhythm(3);
       padding: 0 rhythm(1.5);
-      font-size: 13px;
+      font-size: 14px;
     }
   }
 </style>

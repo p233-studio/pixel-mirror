@@ -19,9 +19,9 @@ import { toastStore } from "./toastStore.svelte";
 export const DOCK_TRANSITION_DURATION = 250;
 
 const DOCK_SIZES: Record<DockMode, Size> = {
-  toolbar: { width: 388, height: 48 },
-  mockups: { width: 816, height: 640 },
-  grids: { width: 640, height: 600 }
+  toolbar: { width: 380, height: 44 },
+  mockups: { width: 820, height: 480 },
+  grids: { width: 640, height: 580 }
 };
 
 function createDockStore() {

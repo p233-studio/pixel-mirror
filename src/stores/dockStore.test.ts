@@ -269,19 +269,19 @@ describe("dockStore", () => {
     });
 
     it("returns toolbar size for toolbar mode", () => {
-      expect(dockStore.size).toEqual({ width: 388, height: 48 });
+      expect(dockStore.size).toEqual({ width: 380, height: 44 });
     });
 
     it("returns mockups size for mockups mode", () => {
       dockStore.enterMockups();
 
-      expect(dockStore.size).toEqual({ width: 816, height: 640 });
+      expect(dockStore.size).toEqual({ width: 820, height: 480 });
     });
 
     it("returns grids size for grids mode", () => {
       dockStore.enterGrids();
 
-      expect(dockStore.size).toEqual({ width: 640, height: 600 });
+      expect(dockStore.size).toEqual({ width: 640, height: 580 });
     });
   });
 
