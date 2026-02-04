@@ -103,7 +103,9 @@ Remove in production.
 
 ## Note
 
-Sets `:root { position: relative }` for overlay positioning.
+This tool sets an inline `position: relative` style on the `<html>` element for overlay positioning. This may affect layouts that depend on the default `static` positioning of `<html>`.
+
+On touch devices, browser pinch-to-zoom is temporarily disabled while the mockup overlay is visible to avoid conflicts with the tool's gesture handling. It reverts to normal when the overlay is hidden.
 
 ## Credits
 
