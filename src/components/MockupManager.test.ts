@@ -250,68 +250,13 @@ describe("MockupManager component", () => {
     });
   });
 
-  describe("drag and drop", () => {
+  describe("accessibility", () => {
     it("has region role with aria-label", () => {
       const { container } = render(MockupManager);
 
       const region = container.querySelector("[role='region']");
       expect(region).toBeInTheDocument();
       expect(region?.getAttribute("aria-label")).toBe("Mockup Manager");
-    });
-
-    it("prevents default on dragover", () => {
-      const { container } = render(MockupManager);
-
-      const region = container.querySelector("[role='region']") as HTMLElement;
-      const dragOverEvent = new Event("dragover", { bubbles: true, cancelable: true });
-      Object.defineProperty(dragOverEvent, "stopPropagation", { value: vi.fn() });
-      region.dispatchEvent(dragOverEvent);
-
-      expect(dragOverEvent.defaultPrevented).toBe(true);
-    });
-
-    it("handles drop with valid image files", () => {
-      const { container } = render(MockupManager);
-
-      const region = container.querySelector("[role='region']") as HTMLElement;
-      const file = new File(["test"], "test.png", { type: "image/png" });
-      const dropEvent = new Event("drop", { bubbles: true, cancelable: true });
-      Object.defineProperty(dropEvent, "dataTransfer", {
-        value: { files: [file] }
-      });
-      Object.defineProperty(dropEvent, "stopPropagation", { value: vi.fn() });
-      region.dispatchEvent(dropEvent);
-
-      expect(dropEvent.defaultPrevented).toBe(true);
-      expect(mockManagerStore.upload).toHaveBeenCalledWith([file]);
-    });
-
-    it("filters out invalid file types on drop", () => {
-      const { container } = render(MockupManager);
-
-      const region = container.querySelector("[role='region']") as HTMLElement;
-      const validFile = new File(["test"], "test.png", { type: "image/png" });
-      const invalidFile = new File(["test"], "test.txt", { type: "text/plain" });
-      const dropEvent = new Event("drop", { bubbles: true, cancelable: true });
-      Object.defineProperty(dropEvent, "dataTransfer", {
-        value: { files: [validFile, invalidFile] }
-      });
-      Object.defineProperty(dropEvent, "stopPropagation", { value: vi.fn() });
-      region.dispatchEvent(dropEvent);
-
-      expect(mockManagerStore.upload).toHaveBeenCalledWith([validFile]);
-    });
-
-    it("handles drop with empty dataTransfer", () => {
-      const { container } = render(MockupManager);
-
-      const region = container.querySelector("[role='region']") as HTMLElement;
-      const dropEvent = new Event("drop", { bubbles: true, cancelable: true });
-      Object.defineProperty(dropEvent, "dataTransfer", { value: null });
-      Object.defineProperty(dropEvent, "stopPropagation", { value: vi.fn() });
-      region.dispatchEvent(dropEvent);
-
-      expect(mockManagerStore.upload).toHaveBeenCalledWith([]);
     });
   });
 

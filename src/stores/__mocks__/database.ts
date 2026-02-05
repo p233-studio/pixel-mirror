@@ -6,7 +6,7 @@ import { vi } from "vitest";
 
 export const getAllMockups = vi.fn().mockResolvedValue([]);
 export const getMockup = vi.fn().mockResolvedValue(undefined);
-export const addMockups = vi.fn().mockResolvedValue(undefined);
+export const addMockups = vi.fn().mockResolvedValue([]);
 export const deleteMockup = vi.fn().mockResolvedValue(undefined);
 export const resetMockups = vi.fn().mockResolvedValue(undefined);
 
@@ -23,7 +23,7 @@ export const resetGridOverlaySettings = vi.fn().mockResolvedValue(undefined);
 export function resetAllMocks() {
   getAllMockups.mockReset().mockResolvedValue([]);
   getMockup.mockReset().mockResolvedValue(undefined);
-  addMockups.mockReset().mockResolvedValue(undefined);
+  addMockups.mockReset().mockResolvedValue([]);
   deleteMockup.mockReset().mockResolvedValue(undefined);
   resetMockups.mockReset().mockResolvedValue(undefined);
 

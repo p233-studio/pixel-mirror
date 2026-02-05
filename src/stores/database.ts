@@ -103,7 +103,7 @@ export async function getMockup(id: string): Promise<Mockup | undefined> {
   }
 }
 
-export async function addMockups(input: MockupInput | MockupInput[]): Promise<void> {
+export async function addMockups(input: MockupInput | MockupInput[]): Promise<string[]> {
   try {
     const inputs = Array.isArray(input) ? input : [input];
     const db = await getDB();
@@ -112,8 +112,10 @@ export async function addMockups(input: MockupInput | MockupInput[]): Promise<vo
     const blobStore = tx.objectStore("mockup_blobs");
 
     const now = Date.now();
+    const ids: string[] = [];
     const putPromises = inputs.map((item, index) => {
       const id = generateId();
+      ids.push(id);
       const { originalBuffer, ...rest } = item;
       const metadata = { ...rest, id, createdAt: now + index };
       return Promise.all([metadataStore.put(metadata), blobStore.put(originalBuffer, id)]);
@@ -121,6 +123,7 @@ export async function addMockups(input: MockupInput | MockupInput[]): Promise<vo
 
     await Promise.all(putPromises);
     await tx.done;
+    return ids;
   } catch (error) {
     throw new DatabaseError("Failed to add mockups", error);
   }

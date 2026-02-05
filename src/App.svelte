@@ -1,13 +1,14 @@
 <svelte:options customElement="pixel-mirror" />
 
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import Dock from "~/components/Dock.svelte";
+  import DropZone from "~/components/DropZone.svelte";
   import GridOverlay from "~/components/GridOverlay.svelte";
   import MockupOverlay from "~/components/MockupOverlay.svelte";
   import Toast from "~/components/Toast.svelte";
-  import { DOUBLE_TAP_DELAY, DRAG_THRESHOLD_GLOBAL, SCROLL_COOLDOWN } from "~/constants";
+  import { ALLOWED_MIME_TYPES, DOUBLE_TAP_DELAY, DRAG_THRESHOLD_GLOBAL, SCROLL_COOLDOWN } from "~/constants";
   import { dockStore } from "~/stores/dockStore.svelte";
+  import { mockupManagerStore } from "~/stores/mockupManagerStore.svelte";
   import { mockupOverlayStore } from "~/stores/mockupOverlayStore.svelte";
   import { isTouchDevice } from "~/utils/device";
 
@@ -64,6 +65,67 @@
     }
   }
 
+  // Global drag-and-drop state
+  let dragEnterCount = 0;
+  let showDropZone = $state(false);
+
+  function hasFiles(e: DragEvent) {
+    return e.dataTransfer?.types.includes("Files") ?? false;
+  }
+
+  function handleGlobalDragEnter(e: DragEvent) {
+    if (!hasFiles(e)) return;
+    dragEnterCount++;
+    if (dragEnterCount === 1) {
+      showDropZone = true;
+    }
+  }
+
+  function handleGlobalDragLeave(e: DragEvent) {
+    if (!hasFiles(e)) return;
+    dragEnterCount--;
+    if (dragEnterCount === 0) {
+      showDropZone = false;
+    }
+  }
+
+  function handleGlobalDragOver(e: DragEvent) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "copy";
+    }
+  }
+
+  function handleGlobalDrop(e: DragEvent) {
+    e.preventDefault();
+    showDropZone = false;
+    dragEnterCount = 0;
+
+    const files = Array.from(e.dataTransfer?.files || []).filter((file) =>
+      ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number])
+    );
+
+    if (files.length > 0) {
+      mockupManagerStore.uploadAndActivate(files);
+    }
+  }
+
+  // Global drag-and-drop listeners
+  $effect(() => {
+    document.addEventListener("dragenter", handleGlobalDragEnter);
+    document.addEventListener("dragleave", handleGlobalDragLeave);
+    document.addEventListener("dragover", handleGlobalDragOver);
+    document.addEventListener("drop", handleGlobalDrop);
+
+    return () => {
+      document.removeEventListener("dragenter", handleGlobalDragEnter);
+      document.removeEventListener("dragleave", handleGlobalDragLeave);
+      document.removeEventListener("dragover", handleGlobalDragOver);
+      document.removeEventListener("drop", handleGlobalDrop);
+    };
+  });
+
   // Conditionally prevent browser zoom gestures and enable global double-tap
   // - When mockup overlay is visible: disable zoom, enable double-tap to toggle solid mode
   // - When mockup overlay is hidden: allow normal browser zoom behavior
@@ -86,19 +148,11 @@
     }
 
     return () => {
-      document.removeEventListener("touchend", handleGlobalTouchEnd);
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollEndTimer) clearTimeout(scrollEndTimer);
-    };
-  });
-
-  onDestroy(() => {
-    if (isTouchDevice()) {
       document.documentElement.style.touchAction = "";
       document.removeEventListener("touchend", handleGlobalTouchEnd);
       window.removeEventListener("scroll", handleScroll);
       if (scrollEndTimer) clearTimeout(scrollEndTimer);
-    }
+    };
   });
 </script>
 
@@ -107,6 +161,7 @@
   <MockupOverlay />
   <Dock />
   <Toast />
+  <DropZone visible={showDropZone} />
 </div>
 
 <style lang="scss">

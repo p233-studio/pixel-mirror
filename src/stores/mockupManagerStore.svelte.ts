@@ -18,6 +18,24 @@ function createMockupManagerStore() {
   let initialized = $state(false);
   let initPromise: Promise<void> | null = null;
 
+  // Shared upload logic: validates files, saves to database, updates local state.
+  // Returns saved mockup IDs (empty array if none were valid).
+  async function processUpload(files: File[]): Promise<string[]> {
+    const { data, errors } = await generateMockupBuffers(files);
+
+    if (errors.length > 0) {
+      errors.forEach((error) => toastStore.showError(error));
+    }
+
+    if (data.length > 0) {
+      const ids = await addMockups(data);
+      mockups = await getAllMockups();
+      return ids;
+    }
+
+    return [];
+  }
+
   return {
     get initialized() {
       return initialized;
@@ -50,17 +68,19 @@ function createMockupManagerStore() {
       if (files.length === 0) return;
 
       try {
-        const { data, errors } = await generateMockupBuffers(files);
+        await processUpload(files);
+      } catch (e) {
+        toastStore.showError(e, "Failed to upload mockups");
+      }
+    },
 
-        // Show validation/processing errors
-        if (errors.length > 0) {
-          errors.forEach((error) => toastStore.showError(error));
-        }
+    uploadAndActivate: async (files: File[]) => {
+      if (files.length === 0) return;
 
-        // Save valid mockups
-        if (data.length > 0) {
-          await addMockups(data);
-          mockups = await getAllMockups();
+      try {
+        const ids = await processUpload(files);
+        if (ids.length > 0) {
+          mockupOverlayStore.setActiveMockup(ids[0]);
         }
       } catch (e) {
         toastStore.showError(e, "Failed to upload mockups");

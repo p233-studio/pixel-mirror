@@ -174,7 +174,9 @@ describe("database operations", () => {
           thumbnailBuffer: new ArrayBuffer(4)
         };
 
-        await expect(database.addMockups(input)).resolves.toBeUndefined();
+        const ids = await database.addMockups(input);
+        expect(ids).toHaveLength(1);
+        expect(typeof ids[0]).toBe("string");
       });
 
       it("adds multiple mockups", async () => {
@@ -201,7 +203,10 @@ describe("database operations", () => {
           }
         ];
 
-        await expect(database.addMockups(inputs)).resolves.toBeUndefined();
+        const ids = await database.addMockups(inputs);
+        expect(ids).toHaveLength(2);
+        expect(typeof ids[0]).toBe("string");
+        expect(typeof ids[1]).toBe("string");
       });
 
       it("throws DatabaseError on failure", async () => {

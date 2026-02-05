@@ -4,6 +4,7 @@
 
   // Constants
   import { ALLOWED_MIME_TYPES } from "~/constants";
+
   // Icons
   import IconDelete from "~/assets/delete-02-stroke-rounded.svg?component";
   import IconUpload from "~/assets/image-upload-stroke-rounded.svg?component";
@@ -21,20 +22,6 @@
       mockupManagerStore.upload(Array.from(target.files));
     }
     target.value = "";
-  }
-
-  function handleDragOver(e: DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  function handleDrop(e: DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    const files = Array.from(e.dataTransfer?.files || []).filter((file) =>
-      ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number])
-    );
-    mockupManagerStore.upload(files);
   }
 
   function handleDelete(e: Event, id: string) {
@@ -71,7 +58,7 @@
 </script>
 
 {#if mockupManagerStore.initialized}
-  <div class="container" role="region" aria-label="Mockup Manager" ondrop={handleDrop} ondragover={handleDragOver}>
+  <div class="container" role="region" aria-label="Mockup Manager">
     <div class="inner">
       <div class="grid">
         <label class="upload-button">

@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // Mock database
 vi.mock("./database", () => ({
   getAllMockups: vi.fn().mockResolvedValue([]),
-  addMockups: vi.fn().mockResolvedValue(undefined),
+  addMockups: vi.fn().mockResolvedValue([]),
   deleteMockup: vi.fn().mockResolvedValue(undefined),
   resetMockups: vi.fn().mockResolvedValue(undefined)
 }));
@@ -66,7 +66,7 @@ describe("mockupManagerStore", () => {
 
     // Reset mocks
     getAllMockups.mockReset().mockResolvedValue([]);
-    addMockups.mockReset().mockResolvedValue(undefined);
+    addMockups.mockReset().mockResolvedValue([]);
     deleteMockup.mockReset().mockResolvedValue(undefined);
     resetMockups.mockReset().mockResolvedValue(undefined);
     mockupOverlayStore.activeMockupId = null;
@@ -196,6 +196,109 @@ describe("mockupManagerStore", () => {
       generateMockupBuffers.mockRejectedValue(error);
 
       await mockupManagerStore.upload([mockFile]);
+
+      expect(toastStore.showError).toHaveBeenCalledWith(error, "Failed to upload mockups");
+    });
+  });
+
+  describe("uploadAndActivate", () => {
+    beforeEach(async () => {
+      await mockupManagerStore.init();
+    });
+
+    it("does nothing with empty file array", async () => {
+      await mockupManagerStore.uploadAndActivate([]);
+
+      expect(generateMockupBuffers).not.toHaveBeenCalled();
+      expect(mockupOverlayStore.setActiveMockup).not.toHaveBeenCalled();
+    });
+
+    it("uploads and activates first mockup", async () => {
+      const mockFile = new File(["test"], "test.png", { type: "image/png" });
+      const mockData = [
+        {
+          originalBuffer: new ArrayBuffer(0),
+          thumbnailBuffer: new ArrayBuffer(0),
+          filename: "test.png",
+          mimeType: "image/png"
+        }
+      ];
+      generateMockupBuffers.mockResolvedValue({ data: mockData, errors: [] });
+      addMockups.mockResolvedValue(["new-id-1"]);
+      getAllMockups.mockResolvedValue([{ id: "new-id-1", filename: "test.png" }]);
+
+      await mockupManagerStore.uploadAndActivate([mockFile]);
+
+      expect(addMockups).toHaveBeenCalledWith(mockData);
+      expect(mockupOverlayStore.setActiveMockup).toHaveBeenCalledWith("new-id-1");
+    });
+
+    it("activates first mockup when multiple files uploaded", async () => {
+      const mockFiles = [
+        new File(["a"], "a.png", { type: "image/png" }),
+        new File(["b"], "b.png", { type: "image/png" })
+      ];
+      const mockData = [
+        {
+          originalBuffer: new ArrayBuffer(0),
+          thumbnailBuffer: new ArrayBuffer(0),
+          filename: "a.png",
+          mimeType: "image/png"
+        },
+        {
+          originalBuffer: new ArrayBuffer(0),
+          thumbnailBuffer: new ArrayBuffer(0),
+          filename: "b.png",
+          mimeType: "image/png"
+        }
+      ];
+      generateMockupBuffers.mockResolvedValue({ data: mockData, errors: [] });
+      addMockups.mockResolvedValue(["id-a", "id-b"]);
+
+      await mockupManagerStore.uploadAndActivate(mockFiles);
+
+      expect(mockupOverlayStore.setActiveMockup).toHaveBeenCalledWith("id-a");
+    });
+
+    it("shows errors but still activates valid mockups", async () => {
+      const mockFiles = [
+        new File(["valid"], "valid.png", { type: "image/png" }),
+        new File(["invalid"], "invalid.txt", { type: "text/plain" })
+      ];
+      const mockData = [
+        {
+          originalBuffer: new ArrayBuffer(0),
+          thumbnailBuffer: new ArrayBuffer(0),
+          filename: "valid.png",
+          mimeType: "image/png"
+        }
+      ];
+      const mockError = { message: "Invalid file type" };
+      generateMockupBuffers.mockResolvedValue({ data: mockData, errors: [mockError] });
+      addMockups.mockResolvedValue(["valid-id"]);
+
+      await mockupManagerStore.uploadAndActivate(mockFiles);
+
+      expect(toastStore.showError).toHaveBeenCalledWith(mockError);
+      expect(mockupOverlayStore.setActiveMockup).toHaveBeenCalledWith("valid-id");
+    });
+
+    it("does not activate when all files are invalid", async () => {
+      const mockFile = new File(["test"], "test.txt", { type: "text/plain" });
+      const mockError = { message: "Invalid file type" };
+      generateMockupBuffers.mockResolvedValue({ data: [], errors: [mockError] });
+
+      await mockupManagerStore.uploadAndActivate([mockFile]);
+
+      expect(mockupOverlayStore.setActiveMockup).not.toHaveBeenCalled();
+    });
+
+    it("handles upload errors", async () => {
+      const mockFile = new File(["test"], "test.png", { type: "image/png" });
+      const error = new Error("Upload failed");
+      generateMockupBuffers.mockRejectedValue(error);
+
+      await mockupManagerStore.uploadAndActivate([mockFile]);
 
       expect(toastStore.showError).toHaveBeenCalledWith(error, "Failed to upload mockups");
     });

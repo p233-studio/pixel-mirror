@@ -110,6 +110,16 @@ updateSetting("mockupOverlay", { opacity: newValue }); // No await
 
 ## Feature Requirements
 
+### Global Drag-and-Drop Upload
+
+Dragging an image file anywhere on the page shows a full-viewport drop zone overlay. Dropping the file adds it to the mockup library and immediately sets it as the active mockup.
+
+- **Handled in App.svelte** via document-level `dragenter`/`dragleave`/`dragover`/`drop` listeners
+- **Counter-based tracking**: `dragEnterCount` prevents flickering from child element enter/leave events
+- **File-only detection**: Only reacts to file drags (`e.dataTransfer.types.includes("Files")`), ignores text/HTML
+- **`uploadAndActivate()`**: Combined upload + auto-activate method on `mockupManagerStore` that uses IDs returned by `addMockups()` to immediately activate the first uploaded mockup
+- **DropZone component**: Visual overlay with theme-aware styling, fade-in animation, upload icon, and dashed border card
+
 ### Mockup Overlay
 
 #### State Machine (5 states)
@@ -398,6 +408,7 @@ src/
 │
 ├── components/
 │   ├── Dock.svelte                   # Toolbar + managers
+│   ├── DropZone.svelte               # Global drag-and-drop overlay
 │   ├── MockupOverlay.svelte          # Image + touch/mouse handlers
 │   ├── GridOverlay.svelte            # Grid rendering
 │   ├── GridManager.svelte            # Grid CRUD UI
@@ -536,6 +547,8 @@ vi.mock("~/stores/database", () => ({
 | Non-secure context (HTTP LAN)  | `generateId()` falls back to `crypto.getRandomValues()` when `crypto.randomUUID()` unavailable                                                     |
 | iOS Safari auto-zoom on focus  | Inputs use `font-size: 16px` on mobile; viewport meta unavailable in custom element context                                                        |
 | Mobile hover double-tap issue  | Interactive elements (e.g., delete buttons) use `@media (hover: hover)` for hover-reveal; always visible on touch devices to avoid two-tap problem |
+| Drag file over child elements  | Counter-based `dragEnterCount` in App.svelte prevents drop zone flickering                                                                         |
+| Drag non-file content          | `hasFiles()` check on `dataTransfer.types` prevents drop zone from showing for text/HTML drags                                                     |
 
 ---
 

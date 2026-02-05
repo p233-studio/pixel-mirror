@@ -505,13 +505,13 @@
       input,
       select {
         height: rhythm(3);
+        padding: 0 rhythm(0.5);
         font-size: 15px;
         color: var(--input-text);
         outline: none;
         background: var(--input-bg);
         border: $border-width-sm solid var(--input-border);
         border-radius: rhythm(0.75);
-        padding: 0 rhythm(0.5);
 
         // Prevent iOS Safari auto-zoom on input focus (requires >= 16px)
         @media (max-width: 680px) {
